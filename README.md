@@ -2,7 +2,7 @@
 Scripts and notebooks for the INTERVAL misexpression manuscript. 
 
 Directories: 
-* 1_data_download - downloading of publicly available reference data
+* `1_data_download` - downloading of publicly available reference data
 * 2_rnaseq_qc - sample QC, gene QC, inactive gene identification
 * 3_misexp_qc - inactive gene validation, misexpression event QC
 * 4_misexp_genes - analysis of the properties of misexpressed genes
