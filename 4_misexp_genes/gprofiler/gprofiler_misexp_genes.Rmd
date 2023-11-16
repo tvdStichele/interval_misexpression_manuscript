@@ -1,0 +1,51 @@
+---
+title: "gProfiler analysis"
+output: html_notebook
+---
+
+```{r}
+library(gprofiler2)
+library(dplyr)
+```
+
+```{r}
+# genes with at least one misexpression event
+wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3"
+misexp_genes_path <-  file.path(wkdir, "2_misexp_qc/misexp_metrics/misexp_genes_tpm0.5_z2.txt")
+misexp_genes <- read.csv(misexp_genes_path, header=FALSE)[['V1']]
+# 8,650 genes passing QC 
+inactive_genes_path <-file.path(wkdir, "2_misexp_qc/misexp_gene_cov_corr/gene_id_post_tech_cov_qc_8650.txt")
+inactive_genes <- read.csv(inactive_genes_path, header=FALSE)[['V1']]
+```
+
+```{r}
+gostres <- gost(query = misexp_genes, 
+                organism = "hsapiens", ordered_query = FALSE, 
+                multi_query = FALSE, significant = TRUE, exclude_iea = FALSE, 
+                measure_underrepresentation = TRUE, evcodes = FALSE, 
+                user_threshold = 0.05, correction_method = "g_SCS", 
+                domain_scope = "custom", custom_bg = inactive_genes, 
+                numeric_ns = "", sources = NULL, as_short_link = FALSE)
+```
+
+```{r}
+gostres_df <- gostres$result
+gostres_hp_df <- subset(gostres_df, source == "HP" & significant == TRUE)
+```
+
+```{r}
+# rename HP root
+value_mapping <- c("HP root" = "All annotations")
+gostres_hp_df <- gostres_hp_df %>%
+  mutate(term_name = case_when(term_name == "HP root" ~ "All annotations", TRUE ~ term_name))
+columns_to_incld <- c("term_name", "p_value")
+gostres_hp_incld_df <- gostres_hp_df[columns_to_incld]
+gostres_hp_incld_df["neg_log10_p_value"] <- -log10(gostres_hp_incld_df$p_value)
+```
+
+```{r}
+out_dir <- file.path(wkdir, "3_misexp_genes/gprofiler_enrichment")
+dir.create(file.path(out_dir))
+hp_gost_results_path <- file.path(out_dir, "gprofiler_hp_enrich_misexp_8650genes.csv")
+write.csv(gostres_hp_incld_df, file=hp_gost_results_path, row.names=FALSE)
+```

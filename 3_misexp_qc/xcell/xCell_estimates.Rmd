@@ -1,0 +1,63 @@
+---
+title: "xCell on INTERVAL dataset"
+output: html_notebook
+---
+
+```{r}
+# load packages
+library(xCell)
+library(data.table)
+library(ggplot2)
+```
+
+```{r}
+wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3/"
+# inputs
+expr_path <- file.path(wkdir, "/1_rna_seq_qc/tpm_mtx/tpm_4731samples_59144genes.csv")
+ensembl_path <- file.path(wkdir, "/reference/ensembl/Homo_sapiens.GRCh38.97.gtf.gz")
+# xcell data downloaded from here: https://github.com/dviraran/xCell/raw/master/data/xCell.data.rda 
+xcell_data_path <- file.path(wkdir, "reference/xcell/xCell.data.rda")
+dir_out <- file.path(wkdir, "2_misexp_qc/xcell")
+```
+
+```{r}
+# read in expression data: genes in rows and samples in columns
+# xCell uses the expression levels ranking and not the actual values, thus normalization does not have an effect, however normalizing to gene length is required
+expr <- data.frame(fread(expr_path))
+
+# set gene names as rownames
+gene.info <- data.frame(rtracklayer::import(ensembl_path))
+expr$gene_name <- gene.info$gene_name[match(expr$gene_id, gene.info$gene_id)]
+rm(gene.info)
+```
+
+```{r}
+# some duplicate gene names: all genes that aren't used by xCell so just drop them
+table(duplicated(expr$gene_name))
+expr$gene_name[duplicated(expr$gene_name)]
+expr <- expr[!duplicated(expr$gene_name), ]
+
+rownames(expr) <- expr$gene_name
+expr$gene_id <- NULL
+expr$gene_name <- NULL
+expr <- data.matrix(expr)
+
+# subset to genes required
+load(xcell_data_path) # list with the spill over and calibration parameters, the signatures and the list of genes it uses
+expr <- expr[rownames(expr) %in% xCell.data$genes, ]
+```
+
+```{r}
+# run xCell: use all cell types as we are checking for contamination
+cell.props <- xCellAnalysis(expr, rnaseq = T)
+```
+
+
+```{r}
+dir.create(dir_out, showWarnings = FALSE)
+# write output
+xcell_path_out <- file.path(wkdir, "xCell_estimates.tsv")
+write.table(t(cell.props), xcell_path_out, sep="\t")
+```
+```
+

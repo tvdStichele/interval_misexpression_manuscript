@@ -1,0 +1,444 @@
+---
+title: "INTERVAL Misexpression Fig.4 and associated supplementary Figs"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+library(dplyr) 
+library(RColorBrewer)
+library(ggrastr)
+```
+
+```{r}
+ticks_size <- 0.75
+border_size <- 1.5
+
+sv_vrnt_colors <- c('DEL' = '#E04B4B', 
+                    'DUP' ='#00C750', 
+                    "Non-carrier" = "grey"
+                    )
+```
+
+
+```{r}
+# output directory
+wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3"
+# Fig. 2
+fig4_out_dir <- file.path(wkdir, "figs/fig_4")
+dir.create(file.path(fig4_out_dir))
+# Supplementary Fig 
+supp_fig10_out_dir <- file.path(wkdir, "figs/supp_fig_10")
+dir.create(file.path(supp_fig10_out_dir))
+```
+
+```{r}
+tx_readthrough_path <- file.path(wkdir, '6_misexp_dissect/tx_readthrough/combine/del_dup_readthrough_region_wgs.tsv')
+tx_readthrough_df <- read.csv(tx_readthrough_path, sep="\t")
+
+tx_readthrough_carrier_df <- tx_readthrough_df[tx_readthrough_df$carrier == "DEL" | tx_readthrough_df$carrier == "DUP", ]
+tx_readthrough_noncarrier_df <- tx_readthrough_df[tx_readthrough_df$carrier == "Non-carrier", ]
+```
+
+### FBNC vs FPKM z-score carrier and non-carriers 
+```{r}
+theme.del_dup_readthough_zscore <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_line(size=ticks_size),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.position = "none", 
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, vjust=2, color="black"),
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+readthrough_rpkm_zscore_pdf = file.path(fig4_out_dir, "del_dup_tx_readthrough_fbnc_fpkm_zscore.pdf")
+pdf(readthrough_rpkm_zscore_pdf, width = 4,height = 4, useDingbats=FALSE)
+
+del_dup_rpkm_cov_zscore <- ggplot() +  
+  rasterize(geom_point(data = tx_readthrough_noncarrier_df, aes(x=fpkm_zscore, y=cov_fraction_zscore, color=carrier, fill=carrier), alpha=0.3, size=4), dpi=600) +
+  geom_point(data = tx_readthrough_carrier_df, aes(x=fpkm_zscore, y=cov_fraction_zscore, color=carrier, fill=carrier), alpha=0.8, size=4) + 
+  scale_y_continuous(name="FBNC z-score") +
+  scale_x_continuous(name="FPKM z-score") +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+  
+theme.del_dup_readthough_zscore(del_dup_rpkm_cov_zscore)
+dev.off()
+readthrough_rpkm_zscore_png <- file.path(fig4_out_dir, "del_dup_tx_readthrough_fbnc_fpkm_zscore.png")
+theme.del_dup_readthough_zscore(del_dup_rpkm_cov_zscore)
+ggsave(readthrough_rpkm_zscore_png, width=4, height=4, dpi=600)
+```
+
+### Relationship between misexpression level and readthrough region FPKM
+```{r}
+readthrough_rpkm_misexp_zscore_pdf = file.path(fig4_out_dir, "del_dup_tx_readthrough_fpkm_misexp_zscore.pdf")
+pdf(readthrough_rpkm_misexp_zscore_pdf, width = 4,height = 4, useDingbats=FALSE)
+
+del_dup_rpkm_misexp_zscore <- ggplot() +  
+  rasterize(geom_point(data = tx_readthrough_noncarrier_df, aes(x=fpkm_zscore, y=z.score, color=carrier, fill=carrier), alpha=0.3, size=4), dpi=600) +
+  geom_point(data = tx_readthrough_carrier_df, aes(x=fpkm_zscore, y=z.score, color=carrier, fill=carrier), alpha=0.8, size=4) + 
+  scale_x_continuous(name="FPKM z-score") +
+  scale_y_continuous(name="Misexpression z-score") +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+  
+theme.del_dup_readthough_zscore(del_dup_rpkm_misexp_zscore)
+dev.off()
+readthrough_rpkm_misexp_zscore_png <- file.path(fig4_out_dir, "del_dup_tx_readthrough_fpkm_misexp_zscore.png")
+theme.del_dup_readthough_zscore(del_dup_rpkm_misexp_zscore)
+ggsave(readthrough_rpkm_misexp_zscore_png, width=4, height=4, dpi=600)
+```
+
+### Relationship between readthrough FBNC and misexpression level 
+```{r}
+readthrough_cov_misexp_zscore_pdf = file.path(fig4_out_dir, "del_dup_tx_readthrough_cov_misexp_zscore.pdf")
+pdf(readthrough_cov_misexp_zscore_pdf, width = 4,height = 4, useDingbats=FALSE)
+
+del_dup_cov_misexp_zscore <- ggplot() +  
+  rasterize(geom_point(data = tx_readthrough_noncarrier_df, aes(x=cov_fraction_zscore, y=z.score, color=carrier, fill=carrier), alpha=0.3, size=4), dpi=600) +
+  geom_point(data = tx_readthrough_carrier_df, aes(x=cov_fraction_zscore, y=z.score, color=carrier, fill=carrier), alpha=0.8, size=4) +
+  scale_x_continuous(name="FBNC z-score") +
+  scale_y_continuous(name="Misexpression z-score") +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+  
+theme.del_dup_readthough_zscore(del_dup_cov_misexp_zscore)
+dev.off()
+readthrough_cov_misexp_zscore_png <- file.path(fig4_out_dir, "del_dup_tx_readthrough_fbnc_misexp_zscore.png")
+theme.del_dup_readthough_zscore(del_dup_cov_misexp_zscore)
+ggsave(readthrough_cov_misexp_zscore_png, width=4, height=4, dpi=600)
+```
+
+### Fig. Readthrough region length DEL and DUPs  
+```{r}
+theme.misexp_svlen <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "none",
+          complete = TRUE,
+          strip.placement = "bottom",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5), 
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+tx_readthrough_len_df <- tx_readthrough_carrier_df %>%
+  select(vrnt_id, SVTYPE, total_len) %>%
+  distinct()
+
+readthrough_len_fig_path = file.path(fig4_out_dir, "readthrough_region_len.pdf")
+pdf(readthrough_len_fig_path, width = 3.5,height = 4, useDingbats=FALSE)
+
+set.seed(39)
+readthrough_total_len <- ggplot(tx_readthrough_len_df, aes(x=SVTYPE, y=total_len,  color=SVTYPE, fill=SVTYPE)) + 
+  geom_violin(position = position_dodge(0.9), alpha=0.2, color="white", width=1, bw=0.2) + 
+  geom_jitter(width=0.2, fill="black", size=4) +
+  scale_x_discrete(name="",
+                   labels=c("Deletions", "Duplications")
+                   ) +
+  scale_y_continuous(name = "Readthrough region length",
+                     trans="log10", 
+                     breaks= c(100, 1000, 10000, 100000),
+                     labels= c("100bp","1kb", "10kb", "100kb")) +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+
+theme.misexp_svlen(readthrough_total_len)
+dev.off()
+readthrough_len_fig_png <- file.path(fig4_out_dir, "readthrough_region_len.png")
+theme.misexp_svlen(readthrough_total_len)
+ggsave(readthrough_len_fig_png, width=3.5, height=4, dpi=600)
+```
+
+### Fig. FPKM per variant-gene pair across all samples 
+```{r}
+### Supplementary raw FPKM per variant-gene pair
+theme.fpkm_coverage_raw <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_line(size=ticks_size),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_blank(),
+          legend.position = "bottom", 
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          complete = TRUE,
+          strip.placement = "bottom",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, vjust=2, color="black"),
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+readthrough_fpkm_raw_path = file.path(supp_fig10_out_dir, "readthrough_fpkm_raw.pdf")
+pdf(readthrough_fpkm_raw_path, width = 6,height = 4, useDingbats=FALSE)
+
+readthrough_fpkm_raw <- ggplot() +  
+  rasterize(geom_jitter(data = tx_readthrough_noncarrier_df, aes(x=vrnt_gene_id, y=fpkm, color=carrier, fill=carrier), alpha=0.3, size=4, width=0.1), dpi=600) +
+  geom_point(data = tx_readthrough_carrier_df, aes(x=vrnt_gene_id, y=fpkm, color=carrier, fill=carrier), alpha=0.8, size=4) + 
+  scale_y_continuous(name="FPKM") +
+  scale_x_discrete(name="Predicted readthrough region") +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+  
+theme.fpkm_coverage_raw(readthrough_fpkm_raw)
+dev.off()
+readthrough_fpkm_raw_png = file.path(supp_fig10_out_dir, "readthrough_fpkm_raw.png")
+theme.fpkm_coverage_raw(readthrough_fpkm_raw)
+ggsave(readthrough_fpkm_raw_png, width=6, height=4, dpi=600)
+```
+### Fig. FBNC per variant-gene pair across all samples 
+```{r}
+### Supplementary raw coverage per variant-gene pair
+readthrough_coverage_raw_path = file.path(supp_fig10_out_dir, "readthrough_fbnc_raw.pdf")
+pdf(readthrough_coverage_raw_path, width = 6,height = 4, useDingbats=FALSE)
+
+readthrough_coverage_raw <- ggplot() +  
+  rasterize(geom_jitter(data = tx_readthrough_noncarrier_df, aes(x=vrnt_gene_id, y=cov_fraction, color=carrier, fill=carrier), alpha=0.3, size=4, width=0.1), dpi=600) +
+  geom_point(data = tx_readthrough_carrier_df, aes(x=vrnt_gene_id, y=cov_fraction, color=carrier, fill=carrier), alpha=0.8, size=4) + 
+  scale_y_continuous(name="FBNC") +
+  scale_x_discrete(name="Predicted readthrough region") +
+  scale_color_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication")) +
+  scale_fill_manual(name = "", values = sv_vrnt_colors,  labels=c("DEL"="Deletion", "DUP"= "Duplication"))
+  
+theme.fpkm_coverage_raw(readthrough_coverage_raw)
+dev.off()
+readthrough_coverage_raw_png = file.path(supp_fig10_out_dir, "readthrough_fbnc_raw.png")
+theme.fpkm_coverage_raw(readthrough_coverage_raw)
+ggsave(readthrough_coverage_raw_png, width=6, height=4, dpi=600)
+```
+
+### DEL & DEL readthrough VEP consequences 
+```{r}
+tx_readthrough_consq_path <-  file.path(wkdir, "6_misexp_dissect/tx_readthrough/combine/del_dup_tx_readthrough_consq.tsv") 
+tx_readthrough_consq_df <- read.csv(tx_readthrough_consq_path, sep='\t')
+
+theme.tx_readthrough_sv_types <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "bottom",
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5), 
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+consq_order <-c("Transcript amplification", "Upstream (5 kb)", "Non-coding transcript","No predicted effect")
+
+tx_readthrough_consq_df <- tx_readthrough_consq_df %>%
+  mutate(
+    consq_name = factor(consq_name, levels=consq_order),
+  )
+
+consq_colors <- c("Transcript amplification"="#76438C",
+                 "Upstream (5 kb)"="#9681FF", 
+                 "Non-coding transcript"="#A4A0CA", 
+                 "No predicted effect"="#E2E2E2") 
+
+tx_readthrough_del_dup_consq_path = file.path(supp_fig10_out_dir, "tx_readthrough_del_dup_consq.pdf")
+pdf(tx_readthrough_del_dup_consq_path, width = 3.5,height = 5, useDingbats=FALSE)
+
+tx_readthrough_vrnt_consq_fig <- ggplot(tx_readthrough_consq_df, aes(x=SVTYPE, y=vrnt_count, label=vrnt_count, color=consq_name, fill=consq_name)) +  
+  geom_bar(width = 0.8, stat="identity", position="fill") +
+  scale_x_discrete(name = "", 
+                   expand=c(0,0), 
+                   labels = c("DEL" = "Deletions", "DUP"="Duplications")
+                   ) +
+  scale_y_continuous(name = "Variant percentage", 
+                     expand=c(0.001, 0.001), 
+                     breaks=c(0, 0.25, 0.5, 0.75, 1.0),
+                     labels=c("0%", "25%", "50%", "75%", "100%"),
+                     ) + 
+  facet_wrap(SVTYPE~., ncol=2, scales="free_x") + 
+  geom_text(size = 5.5, position = position_fill(vjust = 0.5), color="white") + 
+  scale_fill_manual(labels=consq_order, values=consq_colors, name="") +
+  scale_color_manual(labels=consq_order, values=consq_colors, name="") + 
+  guides(fill=guide_legend(ncol=1, bycol=TRUE)) 
+
+theme.tx_readthrough_sv_types(tx_readthrough_vrnt_consq_fig)
+dev.off()
+tx_readthrough_del_dup_consq_png = file.path(supp_fig10_out_dir, "tx_readthrough_del_dup_consq.png")
+theme.tx_readthrough_sv_types(tx_readthrough_vrnt_consq_fig)
+ggsave(tx_readthrough_del_dup_consq_png, width=3.5, height=5, dpi=600)
+```
+### RTP1 misexpression carrier vs non-carriers
+```{r}
+### RTP1 misexpression level 
+rtp1_carrier_path = file.path(wkdir, "6_misexp_dissect/examples/RTP1_DEL_chr3_187069321_187094542_carrier_noncarrier.tsv")
+rtp1_carrier_df <- read.csv(rtp1_carrier_path, sep="\t")
+
+ticks_size <- 0.75
+theme.misexp_carrier_fig <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "none", 
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5),
+          plot.title = element_text(hjust=0.5, size=base_size, family=base_family, face="bold", vjust=2), 
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+          )
+  return(p)
+}
+
+rtp1_carrier_df$status <- factor(rtp1_carrier_df$status, levels = c("Non-carrier", "Carrier"))
+
+misexp_color <- c("Misexpressed" ='#FF4848', # misexoression 
+                   'Not misexpressed' = '#909090' # grey
+                         )
+
+rtp1_carrier_tpm_fig <- file.path(fig4_out_dir, "rtp1_carrier_noncarrier.pdf")
+pdf(rtp1_carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
+
+rtp1_carrier_tpm_fig <- ggplot(rtp1_carrier_df, aes(x=status, y=TPM, color=misexp)) + 
+  rasterize(geom_point(position = position_jitter(width = 0.125, height = 0), size=3, alpha=0.75), dpi=600) +
+  scale_x_discrete(name = "", labels=c("Non-carrier\n (0/0)", "Carrier\n (0/1)")) +
+  scale_y_continuous(name = "Expression (TPM)",  expand=c(0.01,0.01), limits=c(0, 9), breaks=c(0, 2, 4, 6, 8)) + 
+  ggtitle("RTP1") + 
+  scale_color_manual(name = "", values = misexp_color) 
+
+theme.misexp_carrier_fig(rtp1_carrier_tpm_fig)
+dev.off()
+rtp1_carrier_tpm_fig_png <- file.path(fig4_out_dir, "rtp1_carrier_noncarrier.png")
+theme.misexp_carrier_fig(rtp1_carrier_tpm_fig)
+ggsave(rtp1_carrier_tpm_fig_png, width=3, height=4, dpi=600)
+```
+
+### OTP misexpression carriers vs non-carriers
+```{r}
+otp_carrier_path = file.path(wkdir, "6_misexp_dissect/examples/OTP_DEL_chr5_77674588_77771600_carrier_noncarrier.tsv")
+otp_carrier_df <- read.csv(otp_carrier_path, sep="\t")
+
+ticks_size <- 0.75
+theme.misexp_carrier_fig <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "none", 
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5),
+          plot.title = element_text(hjust=0.5, size=base_size, family=base_family, face="bold", vjust=2), 
+          plot.margin = margin(0.5, 0.5, 0.5, 0.5, "cm")
+          )
+  return(p)
+}
+
+otp_carrier_df$status <- factor(otp_carrier_df$status, levels = c("Non-carrier", "Carrier"))
+
+misexp_color <- c("Misexpressed" ='#FF4848', # misexpression 
+                   'Not misexpressed' = '#909090' # grey
+                         )
+
+
+otp_carrier_tpm_fig <- file.path(supp_fig10_out_dir, "otp_carrier_noncarrier.pdf")
+pdf(otp_carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
+
+otp_carrier_tpm_fig <- ggplot(otp_carrier_df, aes(x=status, y=TPM, color=misexp)) + 
+  rasterize(geom_point(position = position_jitter(width = 0.125, height = 0), size=3, alpha=0.75)) +
+  scale_x_discrete(name = "", labels=c("Non-carrier\n (0/0)", "Carrier\n (0/1)")) +
+  scale_y_continuous(name = "Expression (TPM)",  expand=c(0.01,0.01), limits=c(0, 7), breaks=c(0, 2, 4, 6, 8)) + 
+  ggtitle("OTP") + 
+  scale_color_manual(name = "", values = misexp_color) 
+
+theme.misexp_carrier_fig(otp_carrier_tpm_fig)
+dev.off()
+otp_carrier_tpm_fig_png <- file.path(supp_fig10_out_dir, "otp_carrier_noncarrier.png")
+theme.misexp_carrier_fig(otp_carrier_tpm_fig)
+ggsave(otp_carrier_tpm_fig_png, width=3, height=4, dpi=600)
+```
+
+

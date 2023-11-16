@@ -1,0 +1,810 @@
+---
+title: "INTERVAL Misexpression Fig.1 and associated supplementary figs"
+output: 
+---
+
+```{r}
+library(ggplot2)
+library(dplyr) 
+library(RColorBrewer)
+library(ComplexHeatmap)
+library(circlize)
+library(scales)
+```
+
+```{r}
+wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3"
+# Fig. 1
+fig1_out_dir <- file.path(wkdir, "figs/fig_1")
+dir.create(file.path(fig1_out_dir))
+# Supplementary Fig. 1
+supp_fig1_out_dir <- file.path(wkdir, "figs/supp_fig_1")
+dir.create(file.path(supp_fig1_out_dir))
+# supplementary Fig. 2
+supp_fig2_out_dir <- file.path(wkdir, "figs/supp_fig_2")
+dir.create(file.path(supp_fig2_out_dir))
+# supplementary Fig. 3
+supp_fig3_out_dir <- file.path(wkdir, "figs/supp_fig_3")
+dir.create(file.path(supp_fig3_out_dir))
+# supplementary Fig. 4
+supp_fig4_out_dir <- file.path(wkdir, "figs/supp_fig_4")
+dir.create(file.path(supp_fig4_out_dir))
+```
+
+```{r}
+### variables 
+ticks_size <- 0.75
+border_size <- 1.5
+z_cutoff_to_show <- 10
+z_cutoffs_to_show <- c(2, 10, 20, 30, 40)
+z_cutoffs_names <- c("> 2", "> 10", "> 20", "> 30", "> 40")
+```
+
+### Aberrant sample QC 
+```{r}
+aberrant_smpl_cutoff_path =  file.path(wkdir, "1_rna_seq_qc/aberrant_smpl_qc/aberrant_gene_count.csv")
+theme.aberrant_smpl_qc <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(1, 0, 0, 0), "mm"), color="black"), 
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"), 
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.justification = c(0.98, 0.99),
+          legend.position = c(0.98, 0.99),
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5, size=base_size+2, family=base_family, face="plain", color="black"))
+  return(p)
+}
+
+aberrant_smpl_cutoff_path = file.path(wkdir, "/1_rna_seq_qc/aberrant_smpl_qc/aberrant_gene_count.csv")
+
+aberrant_smpl_cutoff_df <- read.csv(aberrant_smpl_cutoff_path, sep=',')
+# as factor 
+aberrant_smpl_cutoff_df$rna_id <- as.character(aberrant_smpl_cutoff_df$rna_id)
+aberrant_smpl_cutoff_df$rna_id <- factor(aberrant_smpl_cutoff_df$rna_id, levels=unique(aberrant_smpl_cutoff_df$rna_id))
+
+aberrant_smpl_qc_path = file.path(supp_fig1_out_dir, "aberrant_smpl_qc.pdf")
+pdf(aberrant_smpl_qc_path, width = 5,height = 5, useDingbats=FALSE)
+
+gene_tpm_fract_fig <- ggplot(aberrant_smpl_cutoff_df, aes(y=count, x=rna_id, color=pass_qc)) + 
+  geom_point() + 
+  scale_x_discrete(labels=c(""), name="Sample rank", expand = c(0.02,0.02)) + 
+  scale_y_continuous(name="Top expression events per sample") + 
+  scale_color_manual(name = 'Pass QC',
+                    values= c("Pass"="#5B84B1FF", "Fail"="#FC766AFF"),
+                    labels=c("Pass", "Fail")) + 
+  geom_segment(aes(x = 0, y =60, xend = 4731, yend = 60), size = 0.75, linetype = "dashed", color="black") 
+
+theme.aberrant_smpl_qc(gene_tpm_fract_fig) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+dev.off()
+theme.aberrant_smpl_qc(gene_tpm_fract_fig) + theme(axis.text.x=element_blank(), axis.ticks.x=element_blank())
+aberrant_smpl_qc_png_path = file.path(supp_fig1_out_dir, "aberrant_smpl_qc.png")
+ggsave(aberrant_smpl_qc_png_path, width = 5, height = 5, dpi=600)
+```
+
+### Distribution of % samples with TPM < 0.1 for each gene
+```{r}
+gene_tpm_fract_path = file.path(wkdir, "1_rna_seq_qc/gene_sets/gene_tpm0.1_fract.csv")
+gene_tpm_fract_df<- read.csv(gene_tpm_fract_path, sep=',')
+
+theme.misexp_gene_activity <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks = element_line(size=0.75),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", color="black", angle=90, vjust=1.5),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", color="black", vjust = -1),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black", vjust = -0.5),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size, family = base_family, face="bold"),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5))
+  return(p)
+}
+
+# colors from matplotlib RdBlu colormap 
+colors_contin=rev(c('#67001f', '#7a0622', '#8d0c25', '#a11228', '#b31a2c', '#bc2c35', '#c53f3d', '#cf5146', '#d86450', '#df755d', '#e7876b', '#ef9978', '#f5a987', '#f7b799', '#f9c5ab', '#fcd3bc', '#fcdecc', '#fbe5d8', '#f9ece5', '#f8f3f1', '#f2f5f6', '#e8f0f4', '#dfebf3', '#d5e7f1', '#c7e0ed', '#b7d8e9', '#a7d0e4', '#97c7df', '#84bcd9', '#70afd2', '#5ba2cb', '#4796c4', '#3c8abe', '#337eb8', '#2b73b2', '#2267ad', '#1b5a9b', '#134c87', '#0c3e74', '#053061'))
+
+# colors inactive and active only 
+colors_binary=rev(c(rep('#E4E4E4', 38), rep('#134c87', 2))) # #A2A2A2
+
+gene_tpm_fract_fig_path = file.path(fig1_out_dir, "tpm_fract_genes.pdf")
+pdf(gene_tpm_fract_fig_path, width = 6,height = 4.5, useDingbats=FALSE)
+
+gene_tpm_fract_fig <- ggplot(gene_tpm_fract_df, aes(x=tpm0.1_fract)) + 
+  geom_segment(aes(x = 0.05, y =0, xend = 0.05, yend = 14000), size = 0.6, linetype = "dashed", color="black") +
+  geom_histogram(col="black", breaks = seq(0,1,by=0.025), fill=colors_binary) + 
+  labs(x = "Samples with TPM > 0.1 (%)", y = "Number of genes") + 
+  scale_x_continuous(breaks=c(0, 0.25, 0.5, 0.75, 1.0), labels=c("0", "25", "50", "75", "100"), expand=c(0.02, 0.02)) + #, expand=c(0.01, 0)) +
+  scale_y_continuous(breaks=c(0, 2000, 4000, 6000, 8000, 10000, 12000, 14000), expand=c(0,0), limits=c(0, 15000)) +
+  coord_cartesian(ylim = c(0, 15000), xlim= c(0, 1))  + 
+  annotate(geom="text", x=0, y=14000, label='atop(bold("Inactive"))', color='#134c87', hjust="left", parse = TRUE, size=5.5, fontface="plain")
+
+theme.misexp_gene_activity(gene_tpm_fract_fig, base_size = 12, base_family = "Helvetica") 
+dev.off()
+theme.misexp_gene_activity(gene_tpm_fract_fig, base_size = 12, base_family = "Helvetica") 
+gene_tpm_fract_fig_png_path = file.path(fig1_out_dir, "tpm_fract_genes.png")
+ggsave(gene_tpm_fract_fig_png_path, width = 6, height = 4.5, dpi=360)
+```
+### ChromHMM k-means clusters gene overlap heatmap
+```{r}
+all_gene_ids_kmeans8_path = file.path(wkdir, "2_misexp_qc/chrom_hmm/gene_chromhmm_state_overlap_kmeans_8_cluster_results.csv")
+all_gene_ids_kmeans8_df = read.csv(all_gene_ids_kmeans8_path, sep=',')
+# matrix for heatmap 
+genes_tp_df = as.data.frame(t(all_gene_ids_kmeans8_df[,3:17 ]))
+heatmap_mat = sapply(genes_tp_df, as.numeric)
+rownames(heatmap_mat) <- colnames(all_gene_ids_kmeans8_df)[2:16]
+# build color palette 
+mat_min_max = seq(min(heatmap_mat), max(heatmap_mat), length=2)
+ht_col_fun = colorRamp2(mat_min_max, c("white", "blue"), space = "RGB")
+
+chromhmm_labels = c(" Active TSS", " Flanking Active TSS", " Transcr. at gene 5' and 3'", " Strong transcription", 
+                    " Weak transcription", " Genic enhancers", " Enhancers", " ZNF genes and repeats", " Heterochromatin", 
+                    " Bivalent/Poised TSS", " Flanking Bivalent TSS/Enh", " Bivalent Enhancer", " Repressed PolyComb", 
+                    " Weak Repressed PolyComb", " Quiescent/Low"
+                    )
+chromhmm_colors = c("255 0 0", "255 69 0", "50 205 50", "0 128 0", "0 100 0", 
+                    "194 225 5", "255 255 0", "102 205 170", "138 145 208", 
+                    "205 92 92", "233 150 122", "189 183 107", "128 128 128", 
+                    "192 192 192", "255 255 255")
+
+sapply(strsplit(chromhmm_colors, " "), function(chromhmm_colors)
+    rgb(chromhmm_colors[1], chromhmm_colors[2], chromhmm_colors[3], maxColorValue=255))
+
+hex_col = c("#FF0000", "#FF4500", "#32CD32", "#008000", "#006400", 
+            "#C2E105", "#FFFF00", "#66CDAA", "#8A91D0", "#CD5C5C", 
+            "#E9967A", "#BDB76B", "#808080", "#C0C0C0", "#FFFFFF")
+
+# annotation colors 
+active_inactive_col = c("Active" = "red", "Inactive" ="blue", "Unassigned" = "grey")
+
+kmean_cluster_col <- c( 
+                   "Transcription"= "#aa1016", 
+                   "Weak transcription"= "#d52221", 
+                   "Unassigned" = "#9E9E9E",
+                   "Quiescent"= "#d4d4d4", 
+                   "Polycomb weak quiescent" ="#549ecd",
+                   "Polycomb weak"= "#2a7aba",
+                   "Polycomb repressed" = "#0c56a0",
+                   "Heterochromatin"="#08306b")
+
+ht_opt$TITLE_PADDING = unit(c(8.5, 8.5), "points") # row title padding to reset: ht_opt(RESET = TRUE)
+
+# annotation bar 
+column_ha = HeatmapAnnotation(foo1 = all_gene_ids_kmeans8_df$kmeans_8_cluster, 
+                              gp = gpar(col = "white"),
+                              show_annotation_name = FALSE,
+                              col = list(foo1 = kmean_cluster_col, foo2=active_inactive_col),
+                              annotation_legend_param = list(foo1 = list(title = "K-means clusters", 
+                                                                         ncol = 3, 
+                                                                         title_position = "topcenter", 
+                                                                         gap = unit(3, "cm"), 
+                                                                         fontsize = 11)
+                                                             )
+                              )
+                                                             
+# save figure 
+chrom_hmm_kmeans_all_genes = file.path(supp_fig1_out_dir, "chrom_hmm_kmeans_all_genes.pdf")
+pdf(file=chrom_hmm_kmeans_all_genes, width = 10, height = 5, useDingbats=FALSE)
+
+# plot heatmap 
+chrom_hmm_kmeans_all_genes_ht <- Heatmap(heatmap_mat, 
+              # clustering 
+              cluster_rows = FALSE, 
+              cluster_columns = FALSE, 
+        name="genes clustered", # heatmap name 
+        col= ht_col_fun, # colormap 
+        na_col="grey", # assign NAs to grey 
+        # tile border 
+        #rect_gp = gpar(col = "white", lwd = 0), # tile border 
+        # border 
+        border_gp = gpar(col = "black", lty = 1, lwd = 0.5), # heatmap border
+        # row title 
+        row_title = "Chromatin States",
+        row_title_side = "left", # row title position 
+        row_title_gp = gpar(fontsize = 14, fontface = "plain"), # row title formatting 
+        row_title_rot = 90, # row title rotation 
+        # row labels 
+        show_row_names = TRUE,
+        row_labels = structure(chromhmm_labels, names = paste0("row", 1:15)), # assigne new labels 
+        #row_order = order(as.numeric(gsub("row", "", rownames(mat)))), # row label ordering 
+        row_names_side = "right", #position of row names 
+        row_names_gp = gpar(fontsize = 11, col = "black"), # fill=hex_col), # row labels formatting  
+        row_names_centered = FALSE, # position or row labels 
+        row_names_max_width = max_text_width(chromhmm_labels, gp = gpar(fontsize = 10)),
+        # column title 
+        column_title = "Genes", 
+        column_title_side = "top", # column title position 
+        column_title_gp = gpar(fontsize = 14, fontface = "plain"), # fill = "white", col="black", border="white"),
+        column_title_rot = 0, # column title rotation 
+        # column labels 
+        show_column_names = FALSE,
+        #column_order = order(as.numeric(gsub("column", "", colnames(mat)))), 
+        column_names_side = "bottom", # column name positions 
+        
+        # heatmap split 
+        #row_split = c(rep(c("A"), 7) , rep(c("B"), 8))
+        # rastering 
+        use_raster=TRUE, 
+        # heatmap size 
+        width = unit(14, "cm"), 
+        height = unit(6, "cm"),
+        
+        # annotations 
+        bottom_annotation = column_ha,
+        # heatmap legend 
+        heatmap_legend_param = list(title = "Overlap", 
+                                    at = c(0, 50, 100), # breaks 
+                                    labels = c("0%", "50%", "100%"), 
+                                    legend_height=unit(4, "cm"), 
+                                    grid_width=unit(0.5, "cm"), 
+                                    title_position = "leftcenter-rot"
+                                    )
+        )
+draw(chrom_hmm_kmeans_all_genes_ht, annotation_legend_side = "bottom")
+dev.off()
+draw(chrom_hmm_kmeans_all_genes_ht, annotation_legend_side = "bottom")
+```
+
+### % chrom HMM inactive in different TPM fraction bins 
+```{r}
+theme.chrom_hmm_inactive <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(1, 0, 0, 0), "mm"), color="black", angle = 90, vjust = 0.5, hjust=1), 
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"), 
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size, family = base_family, face="plain", color="black"),
+          complete = TRUE,
+          legend.position = "bottom",
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5, size=base_size+2, family=base_family, face="plain", color="black"))
+  return(p)
+}
+
+# reverse direction of x-axis
+fract_cluster_tpm_fract_path <- file.path(wkdir, "2_misexp_qc/chrom_hmm/tpm_fract_chromhmm_cluster_count.csv")
+fract_cluster_tpm_fract_df <- read.csv(fract_cluster_tpm_fract_path)
+
+kmean_cluster_col <- c( 
+                   "Transcription"= "#aa1016", 
+                   "Weak transcription"= "#d52221", 
+                   "Unassigned" = "#9E9E9E",
+                   "Quiescent"= "#d4d4d4", 
+                   "Polycomb weak quiescent" ="#549ecd",
+                   "Polycomb weak"= "#2a7aba",
+                   "Polycomb repressed" = "#0c56a0",
+                   "Heterochromatin"="#08306b")
+
+kmean_cluster_order <- c("Transcription", "Weak transcription", "Unassigned", "Quiescent", "Polycomb weak quiescent", "Polycomb weak", "Polycomb repressed", "Heterochromatin")
+fract_cluster_tpm_fract_df$kmeans_8_cluster <- factor(fract_cluster_tpm_fract_df$kmeans_8_cluster, kmean_cluster_order)
+tpm_bin_order <- c("0-5%", "5-10%", "10-15%", "15-20%", "20-25%", "25-30%", "30-35%", "35-40%", "40-45%", "45-50%", "50-55%",
+                   "55-60%", "60-65%","65-70%","70-75%","75-80%", "80-85%","85-90%",  "90-95%",  "95-100%")
+fract_cluster_tpm_fract_df$tpm0.1_fract_bins <- factor(fract_cluster_tpm_fract_df$tpm0.1_fract, tpm_bin_order)
+
+# save figure 
+chromhmm_cluster_tpm_fract_fig_path = file.path(supp_fig1_out_dir, "chrom_hmm_cluster_by_tpm_fract_bin.pdf")
+pdf(file=chromhmm_cluster_tpm_fract_fig_path, width = 5.5, height = 5, useDingbats=FALSE)
+
+chromhmm_cluster_tpm_fract_fig <- ggplot(data=fract_cluster_tpm_fract_df, aes(x=tpm0.1_fract_bins, y=gene_count, fill=kmeans_8_cluster)) + 
+  geom_bar(stat="identity", position="fill", width = 0.85, alpha=0.8) + 
+  scale_x_discrete(name =  "Samples with TPM > 0.1 (%)", expand=c(0,0)) +
+  scale_y_continuous(name = "Percentage of genes", expand=c(0.003,0.003), breaks = c(0, 0.25, 0.5, 0.75, 1), labels = c("0%", "25%", "50%", "75%", "100%")) + 
+  scale_fill_manual(name = "Cluster", values = kmean_cluster_col) + 
+  guides(fill=guide_legend(ncol=2))
+
+theme.chrom_hmm_inactive(chromhmm_cluster_tpm_fract_fig)
+dev.off()
+theme.chrom_hmm_inactive(chromhmm_cluster_tpm_fract_fig)
+chromhmm_cluster_tpm_fract_png = file.path(supp_fig1_out_dir, "chrom_hmm_cluster_by_tpm_fract_bin.png")
+ggsave(chromhmm_cluster_tpm_fract_png, width = 5.5, height = 5, dpi=600)
+```
+
+### % genes overlapping active, inactive or unassigned clusters in different TPM fraction bins 
+```{r}
+fract_activity_tpm_fract_path <- file.path(wkdir, "2_misexp_qc/chrom_hmm/tpm_fract_active_inactive_count.csv")
+fract_activity_tpm_fract_df <- read.csv(fract_activity_tpm_fract_path)
+
+activity_col <- c("Active"= "#d52221", 
+                   "Unassigned" = "#9E9E9E",
+                   "Inactive" = "#2a7aba")
+
+activity_order <- c("Active", "Unassigned", "Inactive")
+fract_activity_tpm_fract_df$activity <- factor(fract_activity_tpm_fract_df$activity, activity_order)
+fract_activity_tpm_fract_df$tpm0.1_fract_bins <- factor(fract_activity_tpm_fract_df$tpm0.1_fract, tpm_bin_order)
+
+# save figure
+activity_tpm_fract_fig_path = file.path(supp_fig1_out_dir, "activity_by_tpm_fract_bin.pdf")
+pdf(file=activity_tpm_fract_fig_path, width = 5.5, height = 5)
+activity_tpm_fract_fig <- ggplot(data=fract_activity_tpm_fract_df, aes(x=tpm0.1_fract_bins, y=gene_count, fill=activity)) + 
+  geom_bar(stat="identity", position="fill", width = 0.85, alpha=0.8) + 
+  scale_x_discrete(name = "Samples with TPM > 0.1 (%)", expand=c(0,0)) +
+  scale_y_continuous(name = "Percentage of genes", expand=c(0.003,0.003), breaks = c(0, 0.25, 0.5, 0.75, 1), labels = c("0%", "25%", "50%", "75%", "100%")) + 
+  scale_fill_manual(name = "Cluster", values = activity_col) + 
+  guides(fill=guide_legend(ncol=1))
+theme.chrom_hmm_inactive(activity_tpm_fract_fig) 
+dev.off()
+theme.chrom_hmm_inactive(activity_tpm_fract_fig) 
+activity_tpm_fract_fig_png = file.path(supp_fig1_out_dir, "activity_by_tpm_fract_bin.png")
+ggsave(activity_tpm_fract_fig_png, width = 5.5, height = 5, dpi=600)
+```
+
+### Summary of inactive gene QC 
+```{r}
+### Inactive gene set QC summary 
+inactive_gene_qc_summary <- file.path(wkdir, "2_misexp_qc/inactive_gene_qc_summary.csv")
+inactive_gene_qc_summary_df = read.csv(inactive_gene_qc_summary)
+
+inactive_gene_qc_summary_df$pc_overlap_round<- as.numeric(sprintf("%0.2f", round(inactive_gene_qc_summary_df$pc_inactive_genes, digits=2)))
+inactive_gene_qc_summary_df$feature <- as.character(inactive_gene_qc_summary_df$feature)
+inactive_gene_qc_summary_df$feature <- factor(inactive_gene_qc_summary_df$feature, levels=unique(inactive_gene_qc_summary_df$feature))
+
+# save figure 
+inactive_gene_qc_summary_fig_path = file.path(supp_fig1_out_dir, "inacive_gene_qc_summary.pdf")
+pdf(file=inactive_gene_qc_summary_fig_path, width = 6, height = 5, useDingbats=FALSE)
+
+theme.inactive_gene_qc <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.y = element_line(size=0.75),
+          axis.ticks.x = element_blank(),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title = element_text(size=base_size+2, family=base_family, face="plain"),
+          axis.text = element_text(size=base_size+2, family=base_family, face="plain"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size+2, family = base_family, face="bold"),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5)
+          )
+  return(p)
+}
+
+inactive_gene_set_check <- ggplot(inactive_gene_qc_summary_df, aes(y=pc_overlap_round, x=feature)) +
+   geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size, width=0.8) + 
+  scale_y_continuous(name = "Percentage of inactive genes", limits=c(0,100), breaks=c(0, 25, 50, 75, 100), expand=c(0,0), labels=c("0%", "25%", "50%", "75%", "100%")) + 
+  scale_x_discrete(name = "", labels =c("Inactive\n genes\n in GTEx\n whole blood", "Not eGenes\n in GTEx\n whole blood", "Inactive\n chromHMM\n cluster", "Not eGenes\n in eQTLGen")) + 
+  geom_text(aes(label = round(pc_overlap_round, 1)), vjust = 2, size = 4.5, fontface="plain", color="black")
+theme.inactive_gene_qc(inactive_gene_set_check)
+dev.off()
+theme.inactive_gene_qc(inactive_gene_set_check)
+inactive_gene_qc_summary_fig_png_path = file.path(supp_fig1_out_dir, "inactive_gene_qc_summary.png")
+ggsave(inactive_gene_qc_summary_fig_png_path, width = 6, height = 5, dpi=360)
+```
+
+### Number of misexpression events at z-score cutoff 
+```{r}
+count_misexp_events_path =  file.path(wkdir, '2_misexp_qc/misexp_metrics/misexp_metrics.csv')
+count_misexp_events_df = read.csv(count_misexp_events_path)
+
+count_misexp_events_df = count_misexp_events_df[count_misexp_events_df$zscore %in% z_cutoffs_to_show, ]
+count_misexp_events_df$zscore <- factor(count_misexp_events_df$zscore, z_cutoffs_to_show)
+
+# save figure
+misexp_count_fig_path = file.path(fig1_out_dir, "misexp_proport_count_zscore_cutoffs.pdf")
+pdf(file=misexp_count_fig_path, width = 6, height = 4.5, useDingbats=FALSE)
+# theme 
+theme.misexp_count <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.y = element_line(size=0.75),
+          axis.ticks.x = element_blank(),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.text = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size, family = base_family, face="bold"),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5))
+  return(p)
+}
+misexp_count_fig <- ggplot(count_misexp_events_df, aes(x = zscore, y = gene_smpl_misexp_perc)) +
+  geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size, width=0.8) +
+  scale_x_discrete(name="Misexpression z-score threshold", labels = c("> 2", "> 10", "> 20", "> 30", "> 40")) +
+  scale_y_continuous(name="Proportion misexpression events\n (% gene-sample pairs)", limits=c(0, 0.1), breaks=c(0, 0.02, 0.04, 0.06, 0.08, 0.1), expand=c(0,0)) + 
+  geom_text(aes(label = comma(gene_smpl_misexp)), vjust = -0.5, size = 4.5, fontface="plain", color="black")
+theme.misexp_count(misexp_count_fig, base_size = 12, base_family = "Helvetica") 
+
+dev.off()
+theme.misexp_count(misexp_count_fig, base_size = 12, base_family = "Helvetica")
+misexp_count_fig_png_path = file.path(fig1_out_dir, "misexp_proport_count_zscore_cutoffs.png")
+ggsave(misexp_count_fig_png_path, width = 6, height = 4.5, dpi=600)
+```
+### Proportion of genes with at least one misexpression event
+```{r}
+misexp_gene_perc_fig_path = file.path(supp_fig2_out_dir, "misexp_gene_perc_zscore_cutoffs.pdf")
+pdf(file=misexp_gene_perc_fig_path, width = 6, height = 4.5, useDingbats=FALSE)
+misexp_count_fig <- ggplot(count_misexp_events_df, aes(x = zscore, y = gene_misexp_perc)) +
+  geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size, width=0.8) +
+  scale_x_discrete(name="Misexpression z-score threshold", labels = c("> 2", "> 10", "> 20", "> 30", "> 40")) +
+  scale_y_continuous(name="Genes with a misexpression event (%)", limits=c(0, 100), breaks=c(0, 25, 50, 75, 100), expand=c(0,0)) + 
+  geom_text(aes(label = comma(gene_misexp)), vjust = -0.5, size = 4.5, fontface="plain", color="black")
+theme.misexp_count(misexp_count_fig, base_size = 12, base_family = "Helvetica")
+dev.off()
+theme.misexp_count(misexp_count_fig, base_size = 12, base_family = "Helvetica")
+misexp_gene_perc_fig_png = file.path(supp_fig2_out_dir, "misexp_gene_perc_zscore_cutoffs.png")
+ggsave(misexp_gene_perc_fig_png, width = 6, height = 4.5, dpi=600)
+```
+
+### Proportion of samples with at least one misexpression event
+```{r}
+misexp_smpl_perc_fig_path = file.path(supp_fig2_out_dir, "misexp_smpl_perc_zscore_cutoffs.pdf")
+pdf(file=misexp_smpl_perc_fig_path, width = 6, height = 4.5, useDingbats=FALSE)
+misexp_smpl_perc_fig <- ggplot(count_misexp_events_df, aes(x = zscore, y = smpl_misexp_perc)) +
+  geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size, width=0.8) +
+  scale_x_discrete(name="Misexpression z-score threshold", labels = c("> 2", "> 10", "> 20", "> 30", "> 40")) +
+  scale_y_continuous(name="Samples with a misexpression event (%)", limits=c(0, 100), breaks=c(0, 25, 50, 75, 100), expand=c(0,0)) + 
+  geom_text(aes(label = comma(smpl_misexp)), vjust = -0.5, size = 4.5, fontface="plain", color="black")
+theme.misexp_count(misexp_smpl_perc_fig, base_size = 12, base_family = "Helvetica")
+dev.off()
+theme.misexp_count(misexp_smpl_perc_fig, base_size = 12, base_family = "Helvetica")
+misexp_smpl_perc_fig_png = file.path(supp_fig2_out_dir, "misexp_smpl_perc_zscore_cutoffs.png")
+ggsave(misexp_smpl_perc_fig_png, width = 6, height = 4.5, dpi=600)
+```
+
+### Misexpression events across continuous z-score cutoffs 
+```{r}
+theme.misexp_count_bins <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.y = element_line(size=0.75),
+          axis.ticks.x = element_blank(),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.text = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black", angle=90, vjust = 0.5, hjust=1),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_text(size=base_size, family = base_family, face="bold"),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5))
+  return(p)
+}
+
+misexp_events_by_bin_path =  file.path(wkdir, '2_misexp_qc/misexp_metrics/misexp_events_per_zscore_bin.tsv')
+misexp_events_by_bin_df = read.csv(misexp_events_by_bin_path, sep="\t")
+
+bin_order <- misexp_events_by_bin_df$z.score_bins
+misexp_events_by_bin_df$z.score_bins <- factor(misexp_events_by_bin_df$z.score_bins, bin_order)
+
+# save figure
+width <- 12
+height <- 3.5
+misexp_events_by_bin_pdf = file.path(supp_fig2_out_dir, "misexp_events_per_zscore_bin.pdf")
+pdf(file=misexp_events_by_bin_pdf, width = width, height = height, useDingbats=FALSE)
+
+misexp_count_fig <- ggplot(misexp_events_by_bin_df, aes(x = z.score_bins, y = misexp_count)) +
+  geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size, width=0.8) +
+  scale_x_discrete(name="Misexpression z-score bin", expand=c(0.01,0.01)) +
+  scale_y_continuous(name="Misexpression events", expand=c(0,0), limits=c(0,2200)) 
+theme.misexp_count_bins(misexp_count_fig, base_size = 12, base_family = "Helvetica") 
+dev.off()
+theme.misexp_count_bins(misexp_count_fig, base_size = 12, base_family = "Helvetica")
+misexp_events_by_bin_png = file.path(supp_fig2_out_dir, "misexp_events_per_zscore_bin.png")
+ggsave(misexp_events_by_bin_png, width = width, height = height, dpi=600)
+```
+### Top 15 Features split by binary and quantitative features 
+```{r}
+theme.feature_logr <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.spacing = unit(0.2, "lines"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.x = element_line(size=0.75),
+          axis.ticks.length = unit(.25, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain"),
+          axis.line.x = element_line(color="black", size=0.75),
+          axis.line.y = element_blank(),
+          axis.title.y=element_blank(),
+          axis.text.y=element_blank(),
+          axis.text.x= element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.ticks.y=element_blank(),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_blank(), #element_text(size=base_size, family = base_family, face="bold"),
+          legend.text = element_text(size=base_size+1, family = base_family, face="plain"),
+          legend.position="bottom",
+          legend.justification = "center",
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5),
+          strip.text.y = element_blank()
+    )
+  return(p)
+}
+
+feature_logr_results_path = file.path(wkdir, '3_misexp_genes/results/enrich_logr_results_pass_bonf_z2_top15.csv')
+feature_logr_results_df = read.csv(feature_logr_results_path)
+
+feature_logr_results_df <- feature_logr_results_df %>%
+  mutate(
+    feature_name_trunc = factor(feature_name_trunc, levels=feature_name_trunc[order(log_odds, decreasing = FALSE)]),
+    label_x = ifelse(log_odds < 0, 0.03, -0.03),
+    label_hjust = ifelse(log_odds < 0, 0, 1)
+  )
+
+feature_group_order = c("Genomic", "Gene sets", "Regulation", "Expression","Constraint &\nconservation")
+feature_logr_results_df$feature_group <- as.character(feature_logr_results_df$feature_group)
+feature_logr_results_df$feature_group <- factor(feature_logr_results_df$feature_group, levels=feature_group_order)
+# top 10 only 
+feature_logr_results_df$rank <- rank(-feature_logr_results_df$log_odds_abs)
+
+# save figure 
+gene_feature_enrich_fig_path = file.path(fig1_out_dir, "gene_feature_enrich_logr_15.pdf")
+pdf(file=gene_feature_enrich_fig_path, width = 6, height = 6.5, useDingbats=FALSE)
+
+facet_labels <- c("Binary" = "Gene groups",
+                  "Quantitative" = "Gene features"
+                  )
+
+# cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+mixep_gene_feature_enrich <- ggplot(feature_logr_results_df, aes(x=log_odds, y=feature_name_trunc, fill=feature_group)) + 
+  geom_bar(stat="identity", alpha=0.8) + #position = position_dodge(width = 0.6), size=3) + 
+  geom_errorbar(aes(xmin=lower, xmax=upper), cex=0.8, width=0, color="black") +
+  geom_text(aes(label = feature_name_trunc, x=label_x, hjust=label_hjust), color = "black", size=4.5) +
+  scale_y_discrete(name = "") +
+  scale_x_continuous(name = "Log Odds", limits=c(-1.1,1.1), position = "bottom") +
+  geom_vline(xintercept=0, size=0.75) +
+  scale_fill_manual(name = 'Category',
+                      values= c( "Genomic"="#88CCEE", "Gene sets"="#CC6677", "Regulation"="#117733", "Expression"="#44AA99", "Constraint &\nconservation"="#DDCC77"), 
+                      labels=feature_group_order, guide="none") + 
+  guides(fill=guide_legend(ncol=3, hjust=0.5, byrow=TRUE, override.aes = list(size=9))) + 
+  facet_grid(class~., scales="free_y", space="free_y")
+
+theme.feature_logr(mixep_gene_feature_enrich)
+dev.off()
+theme.feature_logr(mixep_gene_feature_enrich)
+gene_feature_enrich_logr_png_path = file.path(fig1_out_dir, "gene_feature_enrich_logr_15.png")
+ggsave(gene_feature_enrich_logr_png_path, width = 6, height = 6.5, dpi=360)
+```
+### Gene feature enrichment analysis (all results passing Bonferroni cutoff), across multiple z-scores 
+```{r}
+# read in data 
+feature_logr_results_all_z_path = file.path(wkdir,'3_misexp_genes/results/enrich_logr_results_all_zscores_bonf_log_odds_adj.csv')
+feature_logr_results_all_z_df = read.csv(feature_logr_results_all_z_path)
+# key columns of dataframe 
+feature_logr_results_all_z_group_df <- feature_logr_results_all_z_df[, c("z_score", "log_odds_adj", "feature_name", "feature_group")]
+# sort features into groups 
+feature_logr_results_all_z_group_order_df <- feature_logr_results_all_z_group_df[order(feature_logr_results_all_z_group_df$feature_group, decreasing = TRUE), ]
+# row split 
+row_split <- rep(c("Regulation", "Genomic", "Gene sets", "Expression","Constraint &\nconservation"), c(27, 5, 8, 30, 11))
+# generate heatmap matrix 
+feature_logr_results_all_z_cols_df <- feature_logr_results_all_z_group_order_df[, c("z_score", "log_odds_adj", "feature_name")]
+# convert dataframe to matrix
+feature_logr_reshape_df <- reshape(feature_logr_results_all_z_cols_df, idvar = "feature_name", timevar = "z_score", direction = "wide")
+# remove feature column
+feature_logr_reshape_df <- feature_logr_reshape_df[, -1]
+feature_logr_mat = as.matrix(feature_logr_reshape_df)
+# Row annotations
+feature_labels = unique(feature_logr_results_all_z_cols_df$feature_name)
+# Column annotations 
+zscore_labels = unique(feature_logr_results_all_z_cols_df$z_score)
+colnames(feature_logr_mat) <- c(">2", ">10", ">20", ">30")
+
+# min and max log odds 
+max_log_odds <- max(feature_logr_mat, na.rm=TRUE)
+min_log_odds <- min(feature_logr_mat, na.rm=TRUE)
+max_log_odds_round <- ceiling(max_log_odds)
+min_log_odds_round <- floor(min_log_odds)
+
+# colormap
+my_colors <- colorRamp2(c(-1, 0, 1), c("red", "white", "blue"))
+# save figure 
+gene_feature_enrich_all = file.path(supp_fig3_out_dir, "gene_feature_enrich_all.pdf")
+pdf(file=gene_feature_enrich_all, width = 9, height = 13, useDingbats=FALSE)
+# heatmap
+ha_gene_features <- Heatmap(feature_logr_mat, 
+              col= my_colors, # colormap 
+              na_col="grey", # assign NAs to grey 
+              # row titles 
+              row_split = row_split,
+              row_title = rev(c("Regulation", "Genomic", "Gene sets", "Expression","Constraint &\nconservation")),
+              row_title_side = "right", # row title position 
+              row_title_gp = gpar(fontsize = 12, fontface = "bold"), # row title formatting 
+              row_title_rot = 0, # row title rotation 
+              row_gap = unit(2, "mm"),
+              # row labels 
+              show_row_names = TRUE,
+              row_names_side = "left", #position of row names 
+              row_labels = structure(feature_labels, names = paste0("row", 1:81)),
+              row_names_gp = gpar(fontsize = 10, col = "black"), # fill=hex_col), # row labels formatting  
+              row_names_centered = FALSE, # position or row labels 
+              # column title 
+              column_title = "Misexpression z-score threshold", 
+              column_title_side = "top", # column title position 
+              column_title_gp = gpar(fontsize = 12, fontface = "bold"), # fill = "white", col="black", border="white"),
+              column_title_rot = 0, # column title rotation 
+              # column labels 
+              column_names_side = "top", # column name positions 
+              column_names_gp = gpar(fontsize = 10, col = "black"),
+              column_names_rot = 0,
+              column_names_centered = TRUE,
+              # clustering 
+              cluster_rows = FALSE, 
+              cluster_columns = FALSE, 
+              # rastering 
+              use_raster=TRUE, 
+              # heatmap size 
+              width = unit(10, "cm"), 
+              height = unit(30, "cm"),
+              # tile borders
+              rect_gp = gpar(col = "white", lty = 1, lwd =2),
+              border_gp = gpar(col = "black", lty = 1, lwd = 0.5), # heatmap border
+              # heatmap legend 
+              heatmap_legend_param = list(title = "Log Odds", 
+                                          at = c(-1, -0.5, 0, 0.5, 1), # breaks 
+                                          labels = c("-1", "-0.5", "0", "0.5", "1"), 
+                                          legend_height=unit(4, "cm"), 
+                                          grid_width=unit(0.5, "cm"), 
+                                          title_position = "leftcenter-rot"
+                                          )
+              
+              )
+draw(ha_gene_features)
+dev.off()
+```
+
+### HPO misexpression-tolerant underrepresentation (top 10)
+```{r}
+gprofiler_hp_results_path =file.path(wkdir, "3_misexp_genes/gprofiler_enrichment/gprofiler_hp_enrich_misexp_8650genes.csv")
+gprofiler_hp_results_df = read.csv(gprofiler_hp_results_path, sep=',')
+
+theme.hp_enrich <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.spacing = unit(0.2, "lines"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.x = element_line(size=0.75),
+          axis.ticks.y = element_blank(),
+          axis.ticks.length = unit(.25, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.line.x = element_line(color="black", size=0.75),
+          axis.line.y = element_line(color="black", size=0.75),
+          axis.title.y=element_text(size=base_size+2, family=base_family, face="plain", angle=90),
+          axis.text.y = element_blank(), #element_text(size=base_size-1, family=base_family, face="bold", color="black", hjust=1),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          legend.position="bottom",
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5), 
+          strip.text.y = element_blank(), #element_text(size=base_size, family=base_family, angle = 0, hjust=0),
+    )
+  return(p)
+}
+gprofiler_hp_results_df <- gprofiler_hp_results_df %>%
+  mutate(
+    term_name = factor(term_name, levels=term_name[order(neg_log10_p_value, decreasing = FALSE)])
+  )
+# subset to top 10
+gprofiler_hp_results_df$rank <- rank(-gprofiler_hp_results_df$neg_log10_p_value)
+gprofiler_hp_results_df_top_df <- head(gprofiler_hp_results_df[order(gprofiler_hp_results_df$rank),], 10)
+
+# save figure 
+never_misexp_hp_enrich_path = file.path(fig1_out_dir, "never_misexp_hp_enrich.pdf")
+pdf(file=never_misexp_hp_enrich_path, width = 6, height = 4.5, useDingbats=FALSE)
+
+gprofiler_hp_enrich <-ggplot(data=gprofiler_hp_results_df_top_df, aes(x=neg_log10_p_value, y=term_name)) +
+  geom_bar(stat="identity", 
+           color="black", 
+           size=ticks_size, 
+           width=0.8,
+           fill = '#5B84B1FF', 
+           alpha = 0.5) +
+  scale_y_discrete(name =  "HPO annotations") +
+  geom_text(aes(label = term_name), vjust=0.5, hjust=1.05, color = "black", fontface="plain", size=4) +
+  scale_x_continuous(name = expression(-log[10]("adjusted p-value")), expand=c(0,0), limits=c(0, 38))
+theme.hp_enrich(gprofiler_hp_enrich)
+dev.off()
+theme.hp_enrich(gprofiler_hp_enrich)
+never_misexp_hp_enrich_png_path = file.path(fig1_out_dir, "never_misexp_hp_enrich.png")
+ggsave(never_misexp_hp_enrich_png_path, width = 6, height = 4.5, dpi=600)
+```
+### HPO misexpression-tolerant underrepresentation (top 75)
+```{r}
+gprofiler_hp_results_expanded_df <- head(gprofiler_hp_results_df[order(gprofiler_hp_results_df$rank),], 75)
+# save figure 
+never_misexp_hp_enrich_expanded_path = file.path(supp_fig4_out_dir, "never_misexp_hp_enrich_expanded_top75.pdf")
+pdf(file=never_misexp_hp_enrich_expanded_path, width = 10, height = 15, useDingbats=FALSE)
+
+theme.hp_enrich_all <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.spacing = unit(0.2, "lines"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.x = element_line(size=0.75),
+          axis.ticks.y = element_blank(),
+          axis.ticks.length = unit(.25, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.line.x = element_line(color="black", size=0.75),
+          axis.line.y = element_line(color="black", size=0.75),
+          axis.title.y=element_text(size=base_size+2, family=base_family, face="plain", angle=90),
+          axis.text.y = element_text(size=base_size, family=base_family, face="plain", color="black", hjust=1), 
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          legend.position="bottom",
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5), 
+          strip.text.y = element_blank(), #element_text(size=base_size, family=base_family, angle = 0, hjust=0),
+    )
+  return(p)
+}
+
+# plot bar plot 
+gprofiler_hp_enrich_expanded <-ggplot(data=gprofiler_hp_results_expanded_df, aes(x=neg_log10_p_value, y=term_name)) +
+  geom_bar(stat="identity", 
+           color="black", 
+           size=ticks_size, 
+           width=0.8,
+           fill = '#5B84B1FF', 
+           alpha = 0.8) +
+  scale_y_discrete(name =  "") +
+  scale_x_continuous(name = expression(-log[10]("adjusted p-value")), expand=c(0,0), limits=c(0, 42))
+theme.hp_enrich_all(gprofiler_hp_enrich_expanded)
+dev.off()
+theme.hp_enrich_all(gprofiler_hp_enrich_expanded)
+never_misexp_hp_enrich_exp_png_path = file.path(supp_fig4_out_dir, "never_misexp_hp_enrich_expanded_top75.png")
+ggsave(never_misexp_hp_enrich_exp_png_path, width = 10, height = 15, dpi=600)
+```
+
+

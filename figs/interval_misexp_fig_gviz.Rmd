@@ -1,0 +1,969 @@
+---
+title: "INTERVAL misexp gviz paper figures"
+output: html_notebook
+---
+
+```{r}
+library(Gviz)
+library(GenomicFeatures)
+```
+
+```{r}
+# variables
+options(ucscChromosomeNames=FALSE)
+panel_title_col <- "#3A3A3A"
+del_col <- "#E04B4B"
+del_bgrnd_col <- '#FFECEC'
+dup_col <- "#00C750"
+gen <- "hg38"
+window <- 20000
+wkdir <- "/Users/tv5/Documents/INTERVAL_rare_variants/gviz"
+```
+
+```{r}
+### output directories
+
+#Fig. 4
+fig4_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/fig_4"
+dir.create(file.path(fig4_dir))
+# Fig. 5
+fig5_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/fig_5"
+dir.create(file.path(fig5_dir))
+# Supplementary Fig. 9
+supp_fig10_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_10"
+dir.create(file.path(supp_fig10_dir))
+# supplementary Fig. 10
+supp_fig11_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_11"
+dir.create(file.path(supp_fig11_dir))
+# supplementary Fig. 11
+supp_fig12_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_12"
+dir.create(file.path(supp_fig12_dir))
+```
+
+```{r}
+# load variant information 
+vrnt_features_path <- "/Users/tv5/Documents/INTERVAL_rare_variants/gviz/misexp_vrnts_features/misexp_vrnt_features.tsv"
+# from here: /lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3/6_misexp_dissect/vrnt_features/misexp_vrnt_features.tsv
+vrnt_features_df <- read.csv(vrnt_features_path, sep="\t")
+# GTF file 
+gtf_path <- "/Users/tv5/Documents/INTERVAL_rare_variants/gviz/gviz_tracks/gencode.v31.annotation.gtf"
+txdb <- makeTxDbFromGFF(gtf_path)
+# gene track 
+geneTrack <- GeneRegionTrack(txdb, 
+                       stacking="squish", 
+                       genome=gen, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       fontsize.group = 14,
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", #'#ADD8E6', 
+                       col="#7D7D7D", #'#ADD8E6'
+                       )
+```
+
+### RTP1 misexpression with intergenic splicing 
+```{r}
+### RTP1 misexpression via transcriptional readthrough and intergenic fusion
+# ST6GAL1 and RTP1/ENSG00000175077 misexpression example
+# Variant ID DEL_chr3_187069321_187094542 - affects two genes focus on RTP1
+
+# color scheme 
+vrnt_id ='DEL_chr3_187069321_187094542'
+misexp_gene_id <- "ENSG00000175077"
+track_heights <- c(0.3, 0.15, 0.4, 2)
+# subset to example 
+misexp_example_df <- vrnt_features_df[(vrnt_features_df$vrnt_id == vrnt_id) &
+                                        (vrnt_features_df$gene_id == misexp_gene_id) 
+                                      ,]
+gene_start <- misexp_example_df$gene_start
+gene_end <- misexp_example_df$gene_end
+rna_id <- unique(misexp_example_df$rna_id)
+sv_start <- unique(misexp_example_df$sv_start)
+sv_end <- unique(misexp_example_df$sv_end)
+chr <- unique(misexp_example_df$chr)
+sv_window_start <- sv_start - 1000000
+sv_window_end <- sv_end + 1000000
+sv_type <- unique(misexp_example_df$SVTYPE)
+tpm <- unique(misexp_example_df$TPM)
+msc <- unique(misexp_example_df$Consequence)
+
+gene_window_start <- sv_start - 30000
+gene_window_end <- gene_end + 10000
+### genome track 
+gTrack <- GenomeAxisTrack(col=panel_title_col, # color for axis line and tick marks 
+                          fontcolor=panel_title_col, # fill color for axis annotations 
+                          add35=TRUE, # add 3' to 5' indicators
+                          add53=TRUE, # add 5' to 3' indicators 
+                          lwd = 1.5, # linewidth of axis elements
+                           background.title="white"
+                          )
+### SV Track 
+sv_name = sprintf("%s %s:%s-%s", sv_type, chr, sv_start, sv_end)
+sv_track <- AnnotationTrack(start = sv_start, 
+                            width = sv_end - sv_start, 
+                          chromosome = chr,  
+                          strand = "*",
+                          group = sv_name, 
+                          genome = gen, 
+                          name = "SV", 
+                          fill=del_col, # fill colour 
+                          col=del_col, # border colour
+                          lwd=0,
+                          fontfamily="sans",
+                          fontfamily.title="sans", 
+                          rotation.title=90, 
+                          background.title=bkgrnd_title_col, 
+                          col.title=panel_title_col, 
+                          fontcolor.group = panel_title_col, # group font
+                          fontfamily.group = "sans", 
+                          shape = "box", # shape 
+                          fontsize.group = 14, # fontsize 
+                          just.group="right", # position of label 
+                          groupAnnotation = "group", # specify annotate by group
+                          )
+# get bam file 
+bams_dir <- paste(wkdir, "bams", sep="/", collapse=NULL)
+bam_file <- paste(rna_id, "misexp", vrnt_id, chr, sv_window_start, sv_window_end, "Aligned.sorted.chr_names.bam", 
+                  sep=".", collapse=NULL)
+bam_path <- paste(bams_dir, bam_file, sep="/", collapse=NULL)
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi                Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           ylim = c(0, 150),
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10 # maximum width of the sashimi plots
+                           )
+
+# combine tracks - add misexpressed gene and SV positions
+tracklist = list(gTrack, sv_track, geneTrack, alTrack)
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(sv_start),# gene_start), #gene_start_2), 
+                     width = c(sv_end - sv_start), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = chr,
+                     col = c(del_bgrnd_col),#, '#ededed'), #'#ededed'),
+                     fill=c(del_bgrnd_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+# save file 
+figname <- paste(sv_type, vrnt_id, rna_id, "tx_readthrough.scaled.clean", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(fig4_dir, figname, sep="/", collapse=NULL)
+pdf(fig_path, width=4, height=4, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, from=gene_window_start, 
+           to=gene_window_end, 
+           chromosome = chr,
+           type = c("coverage", "sashimi"), 
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           cex.main = 2, # size of main title
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### OTP misexpression via transcriptional readthrough and intergenic fusion 
+```{r}
+vrnt_id = "293588"
+misexp_gene_id = "ENSG00000171540"
+track_heights <- c(0.3, 0.15, 0.4, 2)
+# subset to example 
+misexp_example_df <- vrnt_features_df[(vrnt_features_df$vrnt_id == vrnt_id) &
+                                        (vrnt_features_df$gene_id == misexp_gene_id) 
+                                      ,]
+gene_start <- misexp_example_df$gene_start
+gene_end <- misexp_example_df$gene_end
+rna_id <- unique(misexp_example_df$rna_id)
+sv_start <- unique(misexp_example_df$sv_start)
+sv_end <- unique(misexp_example_df$sv_end)
+chr <- unique(misexp_example_df$chr)
+sv_window_start <- sv_start - 1000000
+sv_window_end <- sv_end + 1000000
+sv_type <- unique(misexp_example_df$SVTYPE)
+tpm <- unique(misexp_example_df$TPM)
+msc <- unique(misexp_example_df$Consequence)
+
+gene_window_start <- gene_start - 30000
+gene_window_end <- sv_end + 10000
+### genome track 
+gTrack <- GenomeAxisTrack(col=panel_title_col, # color for axis line and tick marks 
+                          fontcolor=panel_title_col, # fill color for axis annotations 
+                          add35=TRUE, # add 3' to 5' indicators
+                          add53=TRUE, # add 5' to 3' indicators 
+                          lwd = 1.5, # linewidth of axis elements
+                           background.title="white"
+                          )
+### SV Track 
+sv_name = sprintf("%s %s:%s-%s", sv_type, chr, sv_start, sv_end)
+sv_track <- AnnotationTrack(start = sv_start, 
+                            width = sv_end - sv_start, 
+                          chromosome = chr,  
+                          strand = "*",
+                          group = sv_name, 
+                          genome = gen, 
+                          name = "SV", 
+                          fill=del_col, # fill colour 
+                          col=del_col, # border colour
+                          lwd=0,
+                          fontfamily="sans",
+                          fontfamily.title="sans", 
+                          rotation.title=90, 
+                          background.title=bkgrnd_title_col, 
+                          col.title=panel_title_col, 
+                          fontcolor.group = panel_title_col, # group font
+                          fontfamily.group = "sans", 
+                          shape = "box", # shape 
+                          fontsize.group = 14, # fontsize 
+                          just.group="above", # position of label 
+                          groupAnnotation = "group", # specify annotate by group
+                          )
+# get bam file 
+bams_dir <- paste(wkdir, "bams", sep="/", collapse=NULL)
+bam_file <- paste(rna_id, "misexp", vrnt_id, chr, sv_window_start, sv_window_end, "Aligned.sorted.chr_names.bam", 
+                  sep=".", collapse=NULL)
+bam_path <- paste(bams_dir, bam_file, sep="/", collapse=NULL)
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi                Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           ylim = c(0, 60),
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10 # maximum width of the sashimi plots
+                           )
+
+# combine tracks - add misexpressed gene and SV positions
+tracklist = list(gTrack, sv_track, geneTrack, alTrack)
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(sv_start),# gene_start), #gene_start_2), 
+                     width = c(sv_end - sv_start), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = chr,
+                     col = c('#FFECEC'),#, '#ededed'), #'#ededed'),
+                     fill=c('#FFECEC'), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+# save file 
+figname <- paste(sv_type, vrnt_id, rna_id, "tx_readthrough.scaled.clean", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig10_dir, figname, sep="/", collapse=NULL)
+pdf(fig_path, width=4, height=4, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, from=gene_window_start, 
+           to=gene_window_end, 
+           chromosome = chr,
+           type = c("coverage", "sashimi"), 
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           cex.main = 2, # size of main title
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### MYH1-GAS7 fusion inspector results 
+
+```{r}
+rna_id = "INT_RNA7961048"
+track_heights <- c(0.2, 0.8)
+
+finspector_dir <- file.path(wkdir, "finspector_max_mate_dist_50kb/")
+rna_id_dir <- file.path(finspector_dir, rna_id)
+
+genome_path <- paste(rna_id_dir, "finspector.fa", sep="/", collapse=NULL)
+gtf_path <- paste(rna_id_dir, "finspector.gtf", sep="/", collapse=NULL)
+bam_path <- paste(rna_id_dir, "finspector.consolidated.bam", sep="/", collapse=NULL)
+
+geneTrack <- GeneRegionTrack(gtf_path, 
+                       stacking="squish", 
+                       genome=genome_path, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", 
+                       col="#7D7D7D", 
+                       )
+
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi        Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10, # maximum width of the sashimi plots
+                           lwd.sashimiMax = 4,
+                           )
+tracklist = list(geneTrack, alTrack)
+
+bp_1 = 2956
+bp_2 = 39604
+
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(bp_1, bp_2),# gene_start), #gene_start_2), 
+                     width = c(150, 150), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = "AC005747.1--MYH1",
+                     col = c(dup_col),#, '#ededed'), #'#ededed'),
+                     fill=c(dup_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste("gas7_myh1_finspector", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(fig5_dir, figname, sep="/", collapse=NULL)
+
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           chromosome = "AC005747.1--MYH1",
+           type = c("coverage", "sashimi"), 
+           cex.main = 2, # size of main title
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### Other fusion inspector results
+
+
+### BOD1L1--LINC01097
+```{r}
+rna_id = "INT_RNA7960028"
+track_heights <- c(0.2, 0.8)
+
+finspector_dir <- file.path(wkdir, "finspector_max_mate_dist_50kb/")
+rna_id_dir <- file.path(finspector_dir, rna_id)
+
+genome_path <- paste(rna_id_dir, "finspector.fa", sep="/", collapse=NULL)
+gtf_path <- paste(rna_id_dir, "finspector.gtf", sep="/", collapse=NULL)
+bam_path <- paste(rna_id_dir, "finspector.consolidated.bam", sep="/", collapse=NULL)
+
+geneTrack <- GeneRegionTrack(gtf_path, 
+                             #chromosome = "BOD1L1--LINC01097",
+                       stacking="squish", 
+                       genome=genome_path, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", 
+                       col="#7D7D7D", 
+                       )
+
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi        Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10, # maximum width of the sashimi plots
+                           lwd.sashimiMax = 4,
+                           )
+tracklist = list(geneTrack, alTrack)
+
+bp_1 = 12970
+bp_2 = 44163
+
+combined_tracks <- HighlightTrack(trackList = tracklist, 
+                                  chromosome = "BOD1L1--LINC01097", 
+                     start = c(bp_1, bp_2),# gene_start), #gene_start_2), 
+                     width = c(150, 150), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     col = c(del_col),#, '#ededed'), #'#ededed'),
+                     fill=c(del_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste("bod1l1_linc01097_finspector", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig11_dir, figname, sep="/", collapse=NULL)
+
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           chromosome = "BOD1L1--LINC01097",
+           type = c("coverage", "sashimi"), 
+           cex.main = 2, # size of main title
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### FBXO8--LINC02268
+```{r}
+rna_id = "INT_RNA7959344"
+track_heights <- c(0.2, 0.8)
+
+finspector_dir <- file.path(wkdir, "finspector_max_mate_dist_50kb/")
+rna_id_dir <- file.path(finspector_dir, rna_id)
+
+genome_path <- paste(rna_id_dir, "finspector.fa", sep="/", collapse=NULL)
+gtf_path <- paste(rna_id_dir, "finspector.gtf", sep="/", collapse=NULL)
+bam_path <- paste(rna_id_dir, "finspector.consolidated.bam", sep="/", collapse=NULL)
+
+geneTrack <- GeneRegionTrack(gtf_path, 
+                             #chromosome = "BOD1L1--LINC01097",
+                       stacking="squish", 
+                       genome=genome_path, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", 
+                       col="#7D7D7D", 
+                       )
+
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi        Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10, # maximum width of the sashimi plots
+                           lwd.sashimiMax = 4,
+                           )
+tracklist = list(geneTrack, alTrack)
+
+bp_1 = 14395
+bp_2 = 2355
+
+combined_tracks <- HighlightTrack(trackList = tracklist, 
+                                  chromosome = "FBXO8--LINC02268", 
+                     start = c(bp_1, bp_2),# gene_start), #gene_start_2), 
+                     width = c(150, 150), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     col = c(del_col),#, '#ededed'), #'#ededed'),
+                     fill=c(del_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste("fbx08_linc02268_finspector", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig11_dir, figname, sep="/", collapse=NULL)
+
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           chromosome = "FBXO8--LINC02268",
+           type = c("coverage", "sashimi"), 
+           cex.main = 2, # size of main title
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### STON2--LINC02308 
+```{r}
+rna_id = "INT_RNA7710877"
+track_heights <- c(0.2, 0.8)
+
+finspector_dir <- file.path(wkdir, "finspector_max_mate_dist_50kb/")
+rna_id_dir <- file.path(finspector_dir, rna_id)
+
+genome_path <- paste(rna_id_dir, "finspector.fa", sep="/", collapse=NULL)
+gtf_path <- paste(rna_id_dir, "finspector.gtf", sep="/", collapse=NULL)
+bam_path <- paste(rna_id_dir, "finspector.consolidated.bam", sep="/", collapse=NULL)
+
+geneTrack <- GeneRegionTrack(gtf_path, 
+                       stacking="squish", 
+                       genome=genome_path, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", 
+                       col="#7D7D7D", 
+                       )
+
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi        Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10, # maximum width of the sashimi plots
+                           lwd.sashimiMax = 4,
+                           )
+tracklist = list(geneTrack, alTrack)
+
+bp_1 = 7790 - 50
+bp_2 = 24329 - 50
+
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(bp_1, bp_2),# gene_start), #gene_start_2), 
+                     width = c(100, 100), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = "STON2--LINC02308",
+                     col = c(dup_col),#, '#ededed'), #'#ededed'),
+                     fill=c(dup_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste("ston2_linc02308_finspector", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig11_dir, figname, sep="/", collapse=NULL)
+
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           chromosome = "STON2--LINC02308",
+           type = c("coverage", "sashimi"), 
+           cex.main = 2, # size of main title
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### KARS--CPHXL
+```{r}
+rna_id = "INT_RNA7710560"
+track_heights <- c(0.2, 0.8)
+
+finspector_dir <- file.path(wkdir, "finspector_max_mate_dist_50kb/")
+rna_id_dir <- file.path(finspector_dir, rna_id)
+
+genome_path <- paste(rna_id_dir, "finspector.fa", sep="/", collapse=NULL)
+gtf_path <- paste(rna_id_dir, "finspector.gtf", sep="/", collapse=NULL)
+bam_path <- paste(rna_id_dir, "finspector.consolidated.bam", sep="/", collapse=NULL)
+
+geneTrack <- GeneRegionTrack(gtf_path, 
+                       stacking="squish", 
+                       genome=genome_path, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", 
+                       col="#7D7D7D", 
+                       )
+
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Sashimi        Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90, 
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10, # maximum width of the sashimi plots
+                           lwd.sashimiMax = 4,
+                           )
+tracklist = list(geneTrack, alTrack)
+
+bp_1 = 8443 - 50
+bp_2 = 20866 - 50
+
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(bp_1, bp_2),# gene_start), #gene_start_2), 
+                     width = c(100, 100), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = "KARS--CPHXL",
+                     col = c(dup_col),#, '#ededed'), #'#ededed'),
+                     fill=c(dup_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste("kars_cphxl_finspector", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig11_dir, figname, sep="/", collapse=NULL)
+
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           chromosome = "KARS--CPHXL",
+           type = c("coverage", "sashimi"), 
+           cex.main = 2, # size of main title
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+dev.off()
+```
+
+### ROPN1B inversion and transcript structure 
+
+```{r}
+track_heights <- c(0.3, 0.17, 1.5)# 2)
+vrnt_id <- '605947'
+misexp_gene_id <- "ENSG00000114547"
+rna_id <- "INT_RNA7710578"
+window_left <- 7500
+window_right <- 7500
+# subset to example 
+misexp_example_df <- vrnt_features_df[(vrnt_features_df$vrnt_id == vrnt_id) &
+                                        (vrnt_features_df$gene_id == misexp_gene_id)  & 
+                                        (vrnt_features_df$rna_id == rna_id) 
+                                      ,]
+gene_start <- misexp_example_df$gene_start
+gene_end <- misexp_example_df$gene_end
+sv_start <- misexp_example_df$sv_start
+sv_end <- misexp_example_df$sv_end
+chr <- misexp_example_df$chr
+sv_type <- misexp_example_df$SVTYPE
+tpm <- misexp_example_df$TPM
+msc <- misexp_example_df$Consequence
+
+gene_window_start <- sv_start - window_left
+gene_window_start <- ifelse(gene_window_start < 0, 0, gene_window_start)
+gene_window_end <- gene_end + window_right
+
+sv_window_start <- sv_start - 1000000
+sv_window_end <- sv_end + 1000000
+### gene track 
+ropn1b_geneTrack <- GeneRegionTrack(txdb, 
+                       squish=TRUE,
+                       genome=gen, 
+                       name="Transcripts", 
+                       geneSymbol=TRUE, 
+                       transcriptAnnotation = "transcript",
+                       rotation.title=90, 
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", #'#ADD8E6', 
+                       col="#7D7D7D", #'#ADD8E6'
+                       )
+
+
+### genome track 
+gTrack <- GenomeAxisTrack(col=panel_title_col, # color for axis line and tick marks 
+                          fontcolor=panel_title_col, # fill color for axis annotations 
+                          add35=TRUE, # add 3' to 5' indicators
+                          add53=TRUE, # add 5' to 3' indicators 
+                          lwd = 1.5 # linewidth of axis elements
+                          )
+### SV Track 
+sv_name = sprintf("%s %s:%s-%s", sv_type, chr, sv_start, sv_end)
+sv_track <- AnnotationTrack(start = sv_start, 
+                            width = sv_end - sv_start, 
+                          chromosome = chr,  
+                          strand = "*",
+                          group = sv_name, 
+                          genome = gen, 
+                          name = "SV", 
+                          fill=inv_col, # fill colour 
+                          col=inv_col, # border colour
+                          lwd=0,
+                          fontfamily="sans",
+                          fontfamily.title="sans", 
+                          rotation.title=90, 
+                          background.title=bkgrnd_title_col, 
+                          col.title=panel_title_col, 
+                          fontcolor.group = panel_title_col, # group font
+                          fontfamily.group = "sans", 
+                          shape = "box", # shape 
+                          fontsize.group = 14, # fontsize 
+                          just.group="above", # position of label 
+                          groupAnnotation = "group", # specify annotate by group
+                          )
+
+# combine tracks - add misexpressed gene and SV positions
+tracklist = list(gTrack, sv_track, ropn1b_geneTrack)#, alTrack)
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(sv_start),# gene_start), #gene_start_2), 
+                     width = c(sv_end - sv_start), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = chr,
+                     col = c('#D1F0FF'),#, '#ededed'), #'#ededed'),
+                     fill=c('#D1F0FF'), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE), # TRUE), #TRUE), 
+                     lwd = c(0), #, 1), #1
+                     )
+
+# save file 
+figname <- paste(sv_type, vrnt_id, rna_id, "inversion", "clean", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(fig5_dir, figname, sep="/", collapse=NULL)
+pdf(fig_path, width=6, height=2.5, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, 
+           from=gene_window_start, 
+           to=gene_window_end, 
+           chromosome = chr,
+           type = c("coverage"), 
+           transcriptAnnotation = "transcript",
+           cex.main = 2, # size of main title
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+dev.off()
+```
+
+### ALPI misexpression 
+```{r}
+# color scheme 
+track_heights <- c(0.25, 0.1, 0.4, 1)
+
+# subset to example 
+window <- 10000
+vrnt_id ='DEL_chr2_232375546_232379537'
+rna_id = "INT_RNA7710238" # highest TPM 
+gene_id = "ENSG00000163295"
+misexp_gene_features_df <- vrnt_features_df[(vrnt_features_df$gene_id == gene_id) & 
+                                            (vrnt_features_df$rna_id == rna_id),]
+gene_start <- unique(misexp_gene_features_df$gene_start)
+gene_end <- unique(misexp_gene_features_df$gene_end)
+
+sv_start_list <- unique(misexp_gene_features_df$sv_start)
+sv_end_list <- unique(misexp_gene_features_df$sv_end)
+sv_start_1 <- sv_start_list[1]
+sv_end_1 <- sv_end_list[1]
+sv_start_2 <- sv_start_list[2]
+sv_end_2 <- sv_end_list[2]
+
+window_start <- sv_start_1 - window
+window_end <- gene_end + window
+chr <- unique(misexp_gene_features_df$chr)
+sv_type <- unique(misexp_gene_features_df$SVTYPE)
+tpm <- unique(misexp_gene_features_df$TPM)
+msc <- unique(misexp_gene_features_df$Consequence)
+
+sv_window_start <- sv_start_1 - 1000000
+sv_window_end <- sv_end_1 + 1000000
+gene_window_start <- sv_start_1 - 10000
+gene_window_end <- gene_end + 45000
+
+### genome track 
+gTrack <- GenomeAxisTrack(col=panel_title_col, # color for axis line and tick marks 
+                          fontcolor=panel_title_col, # fill color for axis annotations 
+                          add35=TRUE, # add 3' to 5' indicators
+                          add53=TRUE, # add 5' to 3' indicators 
+                          lwd = 1.5, # linewidth of axis elements
+                          background.title="white", 
+                          )
+
+# gene track 
+alpi_geneTrack <- GeneRegionTrack(txdb, 
+                       stacking="squish", 
+                       genome=gen, 
+                       name="Genes", 
+                       showId=TRUE, 
+                       geneSymbol=TRUE, 
+                       rotation.title=90, 
+                       fontsize.group = 14,
+                       background.title=bkgrnd_title_col, 
+                       col.title=panel_title_col, 
+                       fill="#7D7D7D", #'#ADD8E6', 
+                       col="#7D7D7D", #'#ADD8E6'
+                       )
+
+### SV Track 
+sv_name_1 = sprintf("%s %s:%s-%s", sv_type, chr, sv_start_1, sv_end_1)
+sv_name_2 = sprintf("%s %s:%s-%s", sv_type, chr, sv_start_2, sv_end_2)
+sv_track <- AnnotationTrack(start = c(sv_start_1, sv_start_2), 
+                            width = c(sv_end_1 - sv_start_1, sv_end_2 - sv_start_2), 
+                          chromosome = chr,  
+                          strand = "*",
+                          id = c(sv_name_1, sv_name_2),
+                          group = c(sv_name_1, sv_name_2), 
+                          genome = gen, 
+                          name = "SV", 
+                          fill=del_col, # fill colour 
+                          col=del_col, # border colour
+                          fontfamily="sans",
+                          fontfamily.title="sans", 
+                          rotation.title=90, 
+                          background.title=bkgrnd_title_col, 
+                          col.title=panel_title_col, 
+                          fontcolor.group = panel_title_col, # group font
+                          fontfamily.group = "sans", 
+                          shape = "box", # shape 
+                          fontsize.group = 14, # fontsize 
+                          just.group="right", # position of label 
+                          groupAnnotation = "group", # specify annotate by group
+                          )
+
+# get bam file 
+bams_dir <- paste(wkdir, "bams", sep="/", collapse=NULL)
+bam_file <- paste(rna_id, "misexp", vrnt_id, chr, sv_window_start, sv_window_end, "Aligned.sorted.chr_names.bam", 
+                  sep=".", collapse=NULL)
+bam_path <- paste(bams_dir, bam_file, sep="/", collapse=NULL)
+alTrack <- AlignmentsTrack(bam_path, 
+                           isPaired = TRUE, 
+                           chromosome=chr, 
+                           start=gene_window_start, 
+                           end=gene_window_end, 
+                           name="Coverage", 
+                           fontfamily="sans",
+                           fontfamily.title="sans", 
+                           rotation.title=90,
+                           background.title=bkgrnd_title_col,
+                           col.title=panel_title_col, 
+                           col.axis=panel_title_col, 
+                           ylim=c(0,2),
+                           lwd.coverage = 1,# linewidth of coverage profile
+                           fill.coverage = "#023471", # fill color for the coverage profile 
+                           col.coverage = "#023471", # line color for the coverage profile 
+                           col.sashimi = "#8E98BD", # color for the sashimi plots 
+                           coverageHeight = 10,
+                           sashimiHeight = 10 # maximum width of the sashimi plots
+                           )
+
+# combine tracks - add misexpressed gene and SV positions
+tracklist = list(gTrack, sv_track, alpi_geneTrack, alTrack)
+combined_tracks <- HighlightTrack(trackList = tracklist,
+                     start = c(sv_start_1, sv_start_2),# gene_start), #gene_start_2), 
+                     width = c(sv_end_1 - sv_start_1, sv_end_2 - sv_start_2), # gene_end - gene_start), #gene_end_2 - gene_start_2),
+                     chromosome = chr,
+                     col = c(del_bgrnd_col, del_bgrnd_col),#, '#ededed'), #'#ededed'),
+                     fill=c(del_bgrnd_col, del_bgrnd_col), #, '#ededed'), #'#ededed'), 
+                     inBackground=c(TRUE, TRUE), # TRUE), #TRUE), 
+                     lwd = c(0, 0), #, 1), #1
+                     )
+# save file 
+figname <- paste(sv_type, vrnt_id, rna_id, "iap.scaled.clean", "pdf", sep=".", collapse=NULL)
+fig_path <- paste(supp_fig12_dir, figname, sep="/", collapse=NULL)
+pdf(fig_path, width=5, height=4, useDingbats=FALSE)
+# plot figure
+plotTracks(combined_tracks, from=gene_window_start, 
+           to=gene_window_end, 
+           chromosome = chr,
+           type = c("coverage"), 
+           collapseTranscripts = "meta", 
+           transcriptAnnotation = "transcript",
+           cex.main = 2, # size of main title
+           title.width = 1,
+           cex.title = 0.8, 
+           sizes=track_heights, 
+           margin=0.5,
+           innerMargin=0.3
+           )
+
+
+dev.off()
+```
+
+

@@ -1,0 +1,638 @@
+---
+title: "INTERVAL Misexpression Fig.3 and associated supplementary Figs"
+output: 
+---
+
+```{r}
+library(ggplot2)
+library(dplyr) 
+library(RColorBrewer)
+library(ComplexHeatmap)
+library(circlize)
+library(scales)
+```
+
+```{r}
+# constants 
+ticks_size=0.75
+border_size=1.5
+line_type="solid"
+z_cutoff_to_show=10
+
+sv_vrnt_colors <- c('DEL' = '#E04B4B', 
+                    'DUP' ='#00C750',
+                    "INV" = "#0081C1", #'#CC6677', #5CC9FF
+                    'MEI' = '#AA4499' 
+                    )
+
+sv_class_labeller <- c("DEL"="Deletions", 
+                       "DUP"="Duplications", 
+                       "INV"="Inversions", 
+                       "MEI"="Mobile element insertions"
+                       )
+
+consq_colors <- c("Transcript amplification"="#76438C",  # dark red ##D03C3C
+                 "Coding"="#448388", ##FF7878
+                 "5' UTR variant"="#F7D89A", #FFCB65"
+                 "Regulatory"="#FF8EA9", 
+                 "Upstream (5 kb)"="#9681FF", 
+                 "Downstream (5 kb)"="#CBC0FF",
+                 "Non-coding"="#A4A0CA", 
+                 "No predicted effect"="#E2E2E2") 
+
+position_colors <- c('Entire gene'="#D55E00", 
+                    'Partial overlap 5\' end'="#E69F00", 
+                    'Partial overlap 3\' end'="#F0E442", 
+                    'Internal'= "#CC79A7",  
+                    'Upstream'="#0072B2", 
+                    'Downstream'="#56B4E9")
+
+svlen_colors <- c("Control" ='#A2A2A2', # (grey), 
+                  "Misexpression" = '#D51A1A' #(red)
+               )
+```
+
+
+```{r}
+wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS/misexpression_v3"
+# Fig. 3
+fig3_out_dir <- file.path(wkdir, "figs/fig_3")
+dir.create(file.path(fig3_out_dir))
+# supplementary Fig. 9
+supp_fig9_out_dir <- file.path(wkdir, "figs/supp_fig_9")
+dir.create(file.path(supp_fig9_out_dir))
+```
+
+### Number of misexpression-associated and control variants 
+```{r}
+misexp_assoc_svtype_path <-  file.path(wkdir, "5_misexp_vrnts/test_cntrl_sets/misexp_contrl_sv_type_count.tsv") 
+misexp_assoc_svtype_df <- read.csv(misexp_assoc_svtype_path, sep='\t')
+
+theme.misexp_cntrl_sv_types <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "bottom",
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5), 
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+rare_sv_msc_type_enrich_path = file.path(fig3_out_dir, "misexp_cntrl_sv_by_class_misexp_sv_genes_only.pdf")
+pdf(rare_sv_msc_type_enrich_path, width = 4.5,height = 5, useDingbats=FALSE)
+
+misexp_assoc_svtype_fig <- ggplot(misexp_assoc_svtype_df, aes(x=group, y=vrnt_count, fill=SVTYPE, label=label)) +  
+  geom_bar(width = 0.8, stat="identity", position="fill") +
+  scale_x_discrete(name = "", 
+                   expand=c(0,0) 
+                   ) +
+  scale_y_continuous(name = "Variant percentage", 
+                     expand=c(0.001, 0.001), 
+                     breaks=c(0, 0.25, 0.5, 0.75, 1.0),
+                     labels=c("0%", "25%", "50%", "75%", "100%"),
+                     ) + 
+  facet_wrap(group~., ncol=2, scales="free_x") + 
+  geom_text(size = 5.5, position = position_fill(vjust = 0.5), color="white") + 
+  scale_fill_manual(values=sv_vrnt_colors, name="SV class", labels=sv_class_labeller) + 
+  guides(fill=guide_legend(ncol=2))
+
+theme.misexp_cntrl_sv_types(misexp_assoc_svtype_fig)
+dev.off()
+theme.misexp_cntrl_sv_types(misexp_assoc_svtype_fig)
+misexp_cntrl_sv_by_class_png <- file.path(fig3_out_dir, "misexp_cntrl_sv_by_class_misexp_sv_genes_only.png")
+ggsave(misexp_cntrl_sv_by_class_png, width = 4.5, height = 5, dpi=360)
+```
+
+### Misexpression-associated variants VEP consequences
+```{r}
+theme.del_dup_misexp_gene_msc_flip <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.ticks.x = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position="right",
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(0, 0, 0, 0), "mm"), color="black"),
+          plot.margin = margin(0, 0, 0.5, 0, "cm"),
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+del_dup_misexp_consq_path = file.path(wkdir, "5_misexp_vrnts/test_cntrl_sets/del_dup_consq_group_count.tsv")
+del_dup_misexp_consq_df <- read.csv(del_dup_misexp_consq_path, sep='\t')
+
+consq_order <- c("Transcript amplification" , "Coding", "5' UTR variant" , "Regulatory", 
+                 "Upstream (5 kb)", "Downstream (5 kb)","Non-coding" , "No predicted effect")   
+del_dup_misexp_consq_df <- del_dup_misexp_consq_df %>%
+  mutate(
+    consq_group_name = factor(consq_group, levels=consq_order),
+  ) 
+
+del_dup_cntrl_test_flip_fig_path = file.path(fig3_out_dir, "del_dup_misexp_consq_group_flip.pdf")
+pdf(del_dup_cntrl_test_flip_fig_path, width = 12, height = 3, useDingbats=FALSE)
+
+del_dup_cntrl_test_fig <- ggplot(del_dup_misexp_consq_df, aes(y=SVTYPE, x=vrnt_gene_count, color=consq_group_name, fill=consq_group_name)) +  
+  geom_bar(width = 1, stat="identity", position="fill") +
+  scale_y_discrete(name = "", 
+                   expand=c(0.01,0.01)) +
+    scale_x_continuous(name = "Variant percentage", 
+                     expand=c(0.001, 0.001),
+                     breaks=c(0, 0.25, 0.5, 0.75, 1.0),
+                     labels=c("0%", "25%", "50%", "75%", "100%"),
+                     ) +  
+  facet_wrap(.~SVTYPE, ncol=1, scales="free_y", labeller=as_labeller(sv_class_labeller)) + 
+  scale_fill_manual(labels=consq_order, values=consq_colors, name="") +
+  scale_color_manual(labels=consq_order, values=consq_colors, name="") + 
+  guides(fill=guide_legend(ncol=1, bycol=TRUE)) 
+
+theme.del_dup_misexp_gene_msc_flip(del_dup_cntrl_test_fig)
+dev.off()
+theme.del_dup_misexp_gene_msc_flip(del_dup_cntrl_test_fig)
+del_dup_cntrl_test_by_type_flip_png <- file.path(fig3_out_dir, "del_dup_misexp_consq_group_flip.png")
+ggsave(del_dup_cntrl_test_by_type_flip_png, width=12, height=3, dpi=600)
+```
+
+### Positions of misexpression-associated SVs relative to misexpressed gene
+```{r}
+misexp_sv_positions_path <- file.path(wkdir, "5_misexp_vrnts/test_cntrl_sets/vrnt_id_pos_to_gene_proport.tsv")
+misexp_sv_positions_df <- read.csv(misexp_sv_positions_path, sep="\t")
+misexp_sv_positions_df <- misexp_sv_positions_df[misexp_sv_positions_df$SVTYPE != "INV",]
+
+theme.vrnt_pos_count <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.ticks.x = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-1, margin = unit(c(2, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_blank(),
+          axis.text.y = element_blank(),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.position = "right",
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          complete = TRUE,
+          strip.placement = "bottom",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(0, 0, 0, 0), "mm"), color="black"),
+          plot.title = element_text(hjust=0.5), 
+          panel.spacing = unit(1, "lines"), 
+          plot.margin = margin(0, 0, 0.5, 0, "cm"),
+          )
+  return(p)
+}
+
+misexp_vrnt_count_pos_fig_path = file.path(fig3_out_dir, "misexp_vrnt_count_pos.pdf")
+pdf(misexp_vrnt_count_pos_fig_path, width=12, height=3, useDingbats=FALSE)
+
+order= c('Entire gene', 'Partial overlap 5\' end', 'Partial overlap 3\' end','Internal',
+         'Upstream', 'Downstream')
+
+misexp_vrnt_count_pos <- ggplot(data=misexp_sv_positions_df, aes(fill=factor(position, order),y=SVTYPE, x=vrnt_count)) + 
+  geom_bar(position="fill", stat='identity', width=1) +
+  scale_y_discrete(name = "", 
+                   expand=c(0, 0)) + 
+  scale_x_continuous(name = "Variant percentage", 
+                     expand=c(0.001, 0.001),
+                     breaks=c(0, 0.25, 0.5, 0.75, 1.0),
+                     labels=c("0%", "25%", "50%", "75%", "100%")) + 
+  facet_wrap(.~SVTYPE, ncol=1, scales="free_y",  labeller=as_labeller(sv_class_labeller)) + 
+  scale_fill_manual(values = position_colors, 
+                        name="Overlap"
+                        ) +
+  guides(fill=guide_legend(ncol=1, bycol=TRUE)) 
+
+theme.vrnt_pos_count(misexp_vrnt_count_pos)
+dev.off()
+theme.vrnt_pos_count(misexp_vrnt_count_pos)
+misexp_vrnt_count_pos_fig_png <- file.path(fig3_out_dir, "misexp_vrnt_count_pos.png")
+ggsave(misexp_vrnt_count_pos_fig_png, width=12, height=3, dpi=600)
+```
+
+### SV length comparison 
+```{r}
+theme.misexp_svlen <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_blank(),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_blank(),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position = "bottom",
+          complete = TRUE,
+          strip.placement = "bottom",
+          strip.background = element_blank(),
+          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5), 
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+sv_in_window_len_info_path <-  file.path(wkdir, "5_misexp_vrnts/test_cntrl_sets/vrnt_id_misexp_cntrl_info.tsv")
+sv_in_window_len_info_df <- read.csv(sv_in_window_len_info_path, sep="\t")
+
+sv_in_window_len_info_no_mei_df <- subset(sv_in_window_len_info_df, !(SVTYPE %in% c("MEI", "INV")))
+
+misexp_sv_len_fig_path = file.path(fig3_out_dir, "misexp_sv_len.pdf")
+pdf(misexp_sv_len_fig_path, width = 5.5,height = 4, useDingbats=FALSE)
+
+misexp_sv_len <- ggplot(sv_in_window_len_info_no_mei_df, aes(x=SVTYPE, y=SVLEN, color=group, fill=group)) + 
+  geom_violin(position = position_dodge(0.9)) + 
+  geom_boxplot(width=0.1, outlier.shape = NA, fill="white", position = position_dodge(0.9)) +
+  scale_x_discrete(name="",
+                   labels=c("Deletions", "Duplications")
+                   ) +
+  scale_y_continuous(name = "SV length",
+                     trans="log10", 
+                     breaks= c(100, 1000, 10000, 100000, 1000000),
+                     labels= c("100bp","1kb", "10kb", "100kb", "1Mb")) +
+  scale_color_manual(name="SV Group", 
+                     values= svlen_colors,
+                     labels=c("Control", 'Misexpression'), guide="none"
+                 ) + 
+  scale_fill_manual(name="", 
+                     values= svlen_colors,
+                     labels=c("Control", 'Misexpression')
+                 )
+
+theme.misexp_svlen(misexp_sv_len)
+dev.off()
+theme.misexp_svlen(misexp_sv_len)
+misexp_sv_len_png <- file.path(fig3_out_dir, "misexp_sv_len.png")
+ggsave(misexp_sv_len_png, width=5.5, height=4, dpi=600)
+```
+
+### SV length comparison (singletons)
+```{r}
+sv_in_window_len_info_no_mei_singletons_df = subset(sv_in_window_len_info_no_mei_df, AC ==1)
+misexp_sv_len_fig_singletons_path = file.path(supp_fig9_out_dir, "misexp_sv_len_singletons.pdf")
+pdf(misexp_sv_len_fig_singletons_path, width = 5.5,height = 4, useDingbats=FALSE)
+
+misexp_sv_len_singletons <- ggplot(sv_in_window_len_info_no_mei_singletons_df, aes(x=SVTYPE, y=SVLEN, color=group, fill=group)) + 
+  geom_violin(position = position_dodge(0.9)) + 
+  geom_boxplot(width=0.1, outlier.shape = NA, fill="white", position = position_dodge(0.9)) +
+  scale_x_discrete(name="SV class",
+                   labels=c("Deletions", "Duplications")
+                   ) +
+  scale_y_continuous(name = "Length",
+                     trans="log10", 
+                     breaks= c(100, 1000, 10000, 100000, 1000000),
+                     labels= c("100bp","1kb", "10kb", "100kb", "1Mb")) +
+  scale_color_manual(name="SV Group", 
+                     values= svlen_colors,
+                     labels=c("Control", 'Misexpression'), guide="none"
+                 ) + 
+  scale_fill_manual(name="", 
+                     values= svlen_colors,
+                     labels=c("Control", 'Misexpression')
+                 )
+
+theme.misexp_svlen(misexp_sv_len_singletons)
+dev.off()
+theme.misexp_svlen(misexp_sv_len_singletons)
+misexp_sv_len_singletons_png <- file.path(supp_fig9_out_dir, "misexp_sv_len_singletons.png")
+ggsave(misexp_sv_len_singletons_png, width=5.5, height=4, dpi=600)
+```
+```{r}
+sv_cnsvtn_cnstrt_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich.tsv")
+sv_cnsvtn_cnstrt_df <- read.csv(sv_cnsvtn_cnstrt_path, sep="\t")
+sv_cnsvtn_cnstrt_df
+```
+
+
+### SV conservation, constraint and deleteriousness (length-adjusted)
+```{r}
+theme.sv_constr_consv <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_rect(color = "black", fill = NA, size = border_size),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_blank(),
+          axis.ticks.x = element_line(size=ticks_size),
+          axis.ticks.y = element_line(size=ticks_size),
+          axis.ticks.length = unit(.15, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", vjust=-0.6, margin = unit(c(1.5, 0, 0, 0), "mm"), color="black"),
+          axis.title.y = element_text(size=base_size+2, family=base_family, face="plain", angle=90, margin = unit(c(0, 2, 0, 0), "mm"), color="black"),
+          axis.text.y = element_text(size=base_size+2, family=base_family, face="plain", hjust=1, margin = unit(c(0, 1, 0, 0), "mm"), color="black"),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", hjust=0.5, margin = unit(c(1, 0, 0, 0), "mm"), color="black"),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size+2, family = base_family, face="plain", color="black"),
+          legend.position="right",
+          complete = TRUE,
+          strip.placement = "outside",
+          strip.background = element_blank(),
+          strip.text = element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          plot.title = element_text(hjust=0.5),
+          panel.spacing = unit(1, "lines")
+          )
+  return(p)
+}
+
+sv_cnsvtn_cnstrt_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich.tsv")
+sv_cnsvtn_cnstrt_df <- read.csv(sv_cnsvtn_cnstrt_path, sep="\t")
+sv_cnsvtn_cnstrt_df <- subset(sv_cnsvtn_cnstrt_df, region == "all")
+
+sv_class_labeller <- c("DEL"="Deletions", 
+                       "DUP"="Duplications"
+                       )
+
+feature_name_order <- c("Conservation", "CADD-SV", "gnomAD constraint", "gwRVIS", "HARs")
+sv_cnsvtn_cnstrt_df <- sv_cnsvtn_cnstrt_df %>%
+  mutate(
+    feature_name = factor(feature_name, levels=rev(feature_name_order)),
+  )
+
+sv_cnsvtn_cnstrt_fig_path = file.path(fig3_out_dir, "sv_cnsvtn_cnstrt.pdf")
+pdf(sv_cnsvtn_cnstrt_fig_path, width = 5.4,height = 4, useDingbats=FALSE)
+
+sv_constr_consv_fig <- ggplot(sv_cnsvtn_cnstrt_df, aes(y=feature_name, x=log_odds, color=sv_type)) + 
+  geom_vline(xintercept=0, linetype="solid", size=ticks_size) +
+  geom_point(size=3, position = position_dodge(width=0.75)) + 
+  ggtitle("") +
+  scale_shape_manual(values=c(15, 17, 16)) +
+  geom_errorbar(aes(xmin=lower, xmax=upper),cex=1, width=0, position = position_dodge(width=0.75)) + 
+  scale_x_continuous(name = "Log Odds", limits = c(-1.5, 2), breaks=c( -1.0, 0, 1, 2), expand=c(0.1, 0.1)) +
+  scale_y_discrete(name = "") +
+  facet_grid(.~sv_type, space = "free", switch='y', labeller=as_labeller(sv_class_labeller)) + 
+  scale_colour_manual(name = "", 
+                      values = sv_vrnt_colors, 
+                      guide="none"
+                      ) + 
+  geom_text(aes(label = ifelse(pass_bonf  == "True"  & log_odds > 0, "*", ""), x=upper), hjust = -0.75, vjust = 0.65, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  geom_text(aes(label = ifelse(pass_bonf  == "True" & log_odds < 0, "*", ""), x=lower), hjust = 1.5, vjust = 0.65, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  guides(fill = guide_legend(override.aes = list(label = NULL)))
+theme.sv_constr_consv(sv_constr_consv_fig)
+dev.off()
+theme.sv_constr_consv(sv_constr_consv_fig)
+sv_cnsvtn_cnstrt_png <- file.path(fig3_out_dir, "sv_cnsvtn_cnstrt.png")
+ggsave(sv_cnsvtn_cnstrt_png, width=5.5, height=4, dpi=600)
+```
+
+### SV conservation, constraint and deleteriousness (not length-adjusted)
+```{r}
+sv_cnsvtn_cnstrt_no_len_adj_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich_no_len_adj.tsv")
+sv_cnsvtn_cnstrt_no_len_adj_df <- read.csv(sv_cnsvtn_cnstrt_no_len_adj_path, sep="\t")
+sv_cnsvtn_cnstrt_no_len_adj_df <- subset(sv_cnsvtn_cnstrt_no_len_adj_df, region == "all")
+
+sv_class_labeller <- c("DEL"="Deletions", 
+                       "DUP"="Duplications"
+                       )
+
+feature_name_order <- c("Conservation", "CADD-SV", "gnomAD constraint", "gwRVIS", "HARs")
+sv_cnsvtn_cnstrt_no_len_adj_df <- sv_cnsvtn_cnstrt_no_len_adj_df %>%
+  mutate(
+    feature_name = factor(feature_name, levels=rev(feature_name_order)),
+  )
+
+sv_cnsvtn_cnstrt_no_len_adj_fig_path = file.path(supp_fig9_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.pdf")
+pdf(sv_cnsvtn_cnstrt_no_len_adj_fig_path, width = 5.5,height = 4, useDingbats=FALSE)
+
+sv_constr_consv_no_len_adj_fig <- ggplot(sv_cnsvtn_cnstrt_no_len_adj_df, aes(y=feature_name, x=log_odds, color=sv_type)) + 
+  geom_vline(xintercept=0, linetype="solid", size=ticks_size) +
+  geom_point(size=3, position = position_dodge(width=0.75)) + 
+  ggtitle("") +
+  scale_shape_manual(values=c(15, 17, 16)) +
+  geom_errorbar(aes(xmin=lower, xmax=upper),cex=1, width=0, position = position_dodge(width=0.75)) + 
+  scale_x_continuous(name = "Log Odds", limits = c(-1.5, 2), breaks=c( -1.0, 0, 1, 2), expand=c(0.1, 0.1)) +
+  scale_y_discrete(name = "") +
+  facet_grid(.~sv_type, space = "free", switch='y', labeller=as_labeller(sv_class_labeller)) + 
+  scale_colour_manual(name = "", 
+                      values = sv_vrnt_colors, 
+                      guide="none"
+                        ) + 
+  geom_text(aes(label = ifelse(pass_bonf  == "True"  & log_odds > 0, "*", ""), x=upper), hjust = -0.75, vjust = 0.65, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+    geom_text(aes(label = ifelse(pass_bonf  == "True" & log_odds < 0, "*", ""), x=lower), hjust = 1.5, vjust = 0.65, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  guides(fill = guide_legend(override.aes = list(label = NULL)))
+theme.sv_constr_consv(sv_constr_consv_no_len_adj_fig)
+dev.off()
+theme.sv_constr_consv(sv_constr_consv_no_len_adj_fig)
+sv_cnsvtn_cnstrt_no_len_adj_fig_png <- file.path(supp_fig9_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.png")
+ggsave(sv_cnsvtn_cnstrt_no_len_adj_fig_png, width=5.5, height=4, dpi=600)
+```
+
+### Heatmap of Duplication and Deletion regulatory enrichment (length-adjusted)
+```{r}
+all_func_enrich_results_path <- file.path(wkdir, "5_misexp_vrnts/functional/results/logr_func_enrich_results_all.tsv")
+all_func_enrich_results_df = read.csv(all_func_enrich_results_path, sep="\t")
+
+all_func_enrich_results_df[, c("sv_type", "log_odds_adj", "feature_name", "category_name")]
+all_func_enrich_results_order_df <- all_func_enrich_results_df[order(all_func_enrich_results_df$category_name, decreasing = TRUE), ]
+
+# row split 
+column_split <- rep(c("Epigenetics", "CTCF", "3D Genome"), c(16, 3, 4))
+row_split <- rep(c("Deletions", "Duplications"), c(1, 1))
+# generate heatmap matrix 
+all_func_enrich_results_order_mtx_df <- all_func_enrich_results_order_df[, c("sv_type", "log_odds_adj", "feature_name")]
+# convert dataframe to matrix
+all_func_enrich_results_order_mtx <- reshape(all_func_enrich_results_order_mtx_df, idvar = "feature_name", timevar = "sv_type", direction = "wide")
+# remove feature column
+all_func_enrich_results_order_mtx <- all_func_enrich_results_order_mtx[, -1]
+feature_logr_mat = as.matrix(all_func_enrich_results_order_mtx)
+# Row annotations
+feature_labels = unique(all_func_enrich_results_order_mtx_df$feature_name)
+# Column annotations 
+sv_labels = unique(all_func_enrich_results_order_mtx_df$sv_type)
+colnames(feature_logr_mat) <- c("Deletions", "Duplications")
+# min and max log odds 
+max_log_odds <- max(feature_logr_mat, na.rm=TRUE)
+min_log_odds <- min(feature_logr_mat, na.rm=TRUE)
+max_log_odds_round <- ceiling(max_log_odds)
+min_log_odds_round <- floor(min_log_odds)
+# colormap
+my_colors <- colorRamp2(c(-1, 0, 1), c("red", "white", "blue"))
+
+dup_del_all_reg_enrich_path = file.path(fig3_out_dir, "dup_del_enrich_heatmap_all.pdf")
+pdf(dup_del_all_reg_enrich_path, width = 10,height = 4, useDingbats=FALSE)
+feature_logr_mat_tp <- t(feature_logr_mat)
+hm_sv_func_features <- Heatmap(feature_logr_mat_tp, 
+              col= my_colors, # colormap 
+              na_col="grey", # assign NAs to grey 
+              # row titles 
+              column_split = column_split,
+              column_title = c("CTCF", "HiC", "Chromatin states & CpG Islands"),
+              column_title_side = "top", # row title position 
+              column_title_gp = gpar(fontsize = 14, fontface = "plain"), # row title formatting 
+              column_title_rot = 0, # row title rotation 
+              column_gap = unit(2, "mm"),
+              # row labels 
+              show_column_names = TRUE,
+              column_names_side = "bottom", #position of row names 
+              column_labels = structure(feature_labels, names = paste0("row", 1:23)),
+              column_names_gp = gpar(fontsize = 12, col = "black"), # fill=hex_col), # row labels formatting  
+              column_names_centered = FALSE, # position or row labels 
+              # row title 
+              row_split = row_split,
+              row_title_side = "left", # column title position 
+              row_title_gp = gpar(fontsize = 14, fontface = "plain"), # fill = "white", col="black", border="white"),
+              row_title_rot = 0, # column title rotation 
+              # row labels 
+              show_row_names = FALSE,
+              row_gap = unit(2, "mm"),
+              #row_names_side = "left", # column name positions 
+              #row_names_gp = gpar(fontsize = 10, col = "black"),
+              #row_names_rot = 0,
+              #row_names_centered = TRUE,
+              # clustering 
+              cluster_rows = FALSE, 
+              cluster_columns = FALSE, 
+              # rastering 
+              use_raster=TRUE, 
+              # heatmap size 
+              width = ncol(feature_logr_mat_tp)*unit(7, "mm"), 
+              height = nrow(feature_logr_mat_tp)*unit(7, "mm"),
+              # tile borders
+              rect_gp = gpar(col = "white", lty = 1, lwd =3),
+              border_gp = gpar(col = "white", lty = 1, lwd = 0.5), # heatmap border
+              # heatmap legend 
+              heatmap_legend_param = list(title = "Log Odds", 
+                                          at = c(-1, -0.5, 0, 0.5, 1), # breaks 
+                                          labels = c("-1", "-0.5", "0", "0.5", "1"), 
+                                          legend_height=unit(3, "cm"), 
+                                          grid_width=unit(0.5, "cm"), 
+                                          title_position = "leftcenter-rot"
+                                          )
+              )
+draw(hm_sv_func_features)
+dev.off()
+draw(hm_sv_func_features)
+```
+
+### Heatmap of Duplication and Deletion regulatory enrichment (not length-adjusted)
+```{r}
+all_func_enrich_results_path <-  file.path(wkdir, "5_misexp_vrnts/functional/results/logr_func_enrich_results_all_no_len_adj.tsv")
+all_func_enrich_results_df = read.csv(all_func_enrich_results_path, sep="\t")
+
+all_func_enrich_results_df[, c("sv_type", "log_odds_adj", "feature_name", "category_name")]
+all_func_enrich_results_order_df <- all_func_enrich_results_df[order(all_func_enrich_results_df$category_name, decreasing = TRUE), ]
+
+# row split 
+column_split <- rep(c("Epigenetics", "CTCF", "3D Genome"), c(16, 3, 4))
+row_split <- rep(c("Deletions", "Duplications"), c(1, 1))
+# generate heatmap matrix 
+all_func_enrich_results_order_mtx_df <- all_func_enrich_results_order_df[, c("sv_type", "log_odds_adj", "feature_name")]
+# convert dataframe to matrix
+all_func_enrich_results_order_mtx <- reshape(all_func_enrich_results_order_mtx_df, idvar = "feature_name", timevar = "sv_type", direction = "wide")
+# remove feature column
+all_func_enrich_results_order_mtx <- all_func_enrich_results_order_mtx[, -1]
+feature_logr_mat = as.matrix(all_func_enrich_results_order_mtx)
+# Row annotations
+feature_labels = unique(all_func_enrich_results_order_mtx_df$feature_name)
+# Column annotations 
+sv_labels = unique(all_func_enrich_results_order_mtx_df$sv_type)
+colnames(feature_logr_mat) <- c("Deletions", "Duplications")
+# min and max log odds 
+max_log_odds <- max(feature_logr_mat, na.rm=TRUE)
+min_log_odds <- min(feature_logr_mat, na.rm=TRUE)
+max_log_odds_round <- ceiling(max_log_odds)
+min_log_odds_round <- floor(min_log_odds)
+# colormap
+my_colors <- colorRamp2(c(-1, 0, 1), c("red", "white", "blue"))
+
+dup_del_all_reg_enrich_path = file.path(supp_fig9_out_dir, "dup_del_enrich_heatmap_all_no_len_adj.pdf")
+pdf(dup_del_all_reg_enrich_path, width = 10,height = 4, useDingbats=FALSE)
+feature_logr_mat_tp <- t(feature_logr_mat)
+hm_sv_func_features <- Heatmap(feature_logr_mat_tp, 
+              col= my_colors, # colormap 
+              na_col="grey", # assign NAs to grey 
+              # row titles 
+              column_split = column_split,
+              column_title = c("CTCF", "HiC", "Chromatin states & CpG Islands"),
+              column_title_side = "top", # row title position 
+              column_title_gp = gpar(fontsize = 14, fontface = "plain"), # row title formatting 
+              column_title_rot = 0, # row title rotation 
+              column_gap = unit(2, "mm"),
+              # row labels 
+              show_column_names = TRUE,
+              column_names_side = "bottom", #position of row names 
+              column_labels = structure(feature_labels, names = paste0("row", 1:23)),
+              column_names_gp = gpar(fontsize = 12, col = "black"), # fill=hex_col), # row labels formatting  
+              column_names_centered = FALSE, # position or row labels 
+              # row title 
+              row_split = row_split,
+              row_title_side = "left", # column title position 
+              row_title_gp = gpar(fontsize = 14, fontface = "plain"), # fill = "white", col="black", border="white"),
+              row_title_rot = 0, # column title rotation 
+              # row labels 
+              show_row_names = FALSE,
+              row_gap = unit(2, "mm"),
+              #row_names_side = "left", # column name positions 
+              #row_names_gp = gpar(fontsize = 10, col = "black"),
+              #row_names_rot = 0,
+              #row_names_centered = TRUE,
+              # clustering 
+              cluster_rows = FALSE, 
+              cluster_columns = FALSE, 
+              # rastering 
+              use_raster=TRUE, 
+              # heatmap size 
+              width = ncol(feature_logr_mat_tp)*unit(7, "mm"), 
+              height = nrow(feature_logr_mat_tp)*unit(7, "mm"),
+              # tile borders
+              rect_gp = gpar(col = "white", lty = 1, lwd =3),
+              border_gp = gpar(col = "white", lty = 1, lwd = 0.5), # heatmap border
+              # heatmap legend 
+              heatmap_legend_param = list(title = "Log Odds", 
+                                          at = c(-1, -0.5, 0, 0.5, 1), # breaks 
+                                          labels = c("-1", "-0.5", "0", "0.5", "1"), 
+                                          legend_height=unit(3, "cm"), 
+                                          grid_width=unit(0.5, "cm"), 
+                                          title_position = "leftcenter-rot"
+                                          )
+              )
+draw(hm_sv_func_features)
+dev.off()
+draw(hm_sv_func_features)
+```
+
+
