@@ -138,7 +138,9 @@ def main():
                     a.template_length = read.template_length
                     a.query_qualities = read.query_qualities
                     a.tags = read.tags
-                    outf.write(a)
+                    # remove multi-mapping reads
+                    if a.has_tag("NH") and a.get_tag("NH") == 1:
+                        outf.write(a)
             # index output with chromosome names 
             pysam.index(str(full_output_path))
 

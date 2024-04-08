@@ -530,6 +530,7 @@ theme.misexp_count_bins(misexp_count_fig, base_size = 12, base_family = "Helveti
 misexp_events_by_bin_png = file.path(supp_fig2_out_dir, "misexp_events_per_zscore_bin.png")
 ggsave(misexp_events_by_bin_png, width = width, height = height, dpi=600)
 ```
+
 ### Top 15 Features split by binary and quantitative features 
 ```{r}
 theme.feature_logr <- function(p, base_size = 11, base_family = "Helvetica") {

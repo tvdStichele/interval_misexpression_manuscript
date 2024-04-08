@@ -13,7 +13,7 @@ wkdir=/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thomasVDS
 star_dir=/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq_n5188_v97/results/star_pass2_2ndpass/
 misexp_vrnts=${wkdir}/5_misexp_vrnts/test_cntrl_sets/vrnt_id_misexp_tpm_zscore_median.txt
 misexp_feat=${wkdir}/6_misexp_dissect/vrnt_features/misexp_vrnt_features.tsv
-rna_id_pass=${wkdir}/1_rna_seq_qc/aberrant_smpl_qc/smpls_pass_qc_4568.csv
+    rna_id_pass=${wkdir}/1_rna_seq_qc/aberrant_smpl_qc/smpls_pass_qc_4568.csv
 out=${wkdir}/6_misexp_dissect/bams
 mkdir -p $out
 

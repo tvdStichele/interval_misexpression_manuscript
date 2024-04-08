@@ -234,6 +234,7 @@ readthrough_fpkm_raw_png = file.path(supp_fig10_out_dir, "readthrough_fpkm_raw.p
 theme.fpkm_coverage_raw(readthrough_fpkm_raw)
 ggsave(readthrough_fpkm_raw_png, width=6, height=4, dpi=600)
 ```
+
 ### Fig. FBNC per variant-gene pair across all samples 
 ```{r}
 ### Supplementary raw coverage per variant-gene pair
