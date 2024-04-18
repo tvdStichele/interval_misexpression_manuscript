@@ -24,19 +24,19 @@ wkdir <- "/Users/tv5/Documents/INTERVAL_rare_variants/gviz"
 ### output directories
 
 #Fig. 4
-fig4_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/fig_4"
+fig4_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/ajhg_submission/review/paper_figs_review_final/fig_4"
 dir.create(file.path(fig4_dir))
 # Fig. 5
-fig5_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/fig_5"
+fig5_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/ajhg_submission/review/paper_figs_review_final/fig_5"
 dir.create(file.path(fig5_dir))
 # Supplementary Fig. 9
-supp_fig10_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_10"
+supp_fig10_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/ajhg_submission/review/paper_figs_review_final/supp_fig_13"
 dir.create(file.path(supp_fig10_dir))
 # supplementary Fig. 10
-supp_fig11_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_11"
+supp_fig11_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/ajhg_submission/review/paper_figs_review_final/supp_fig_14"
 dir.create(file.path(supp_fig11_dir))
 # supplementary Fig. 11
-supp_fig12_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/figs_authors_final/supp_fig_12"
+supp_fig12_dir <- "/Users/tv5/Documents/INTERVAL_rare_variants/misexp_paper/ajhg_submission/review/paper_figs_review_final/supp_fig_15"
 dir.create(file.path(supp_fig12_dir))
 ```
 
@@ -381,8 +381,6 @@ dev.off()
 ```
 
 ### Other fusion inspector results
-
-
 ### BOD1L1--LINC01097
 ```{r}
 rna_id = "INT_RNA7960028"
@@ -965,5 +963,3 @@ plotTracks(combined_tracks, from=gene_window_start,
 
 dev.off()
 ```
-
-

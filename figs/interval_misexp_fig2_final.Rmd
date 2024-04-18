@@ -18,9 +18,12 @@ z_cutoffs_to_show <- c(2, 10, 20, 30, 40)
 z_cutoffs_names <- c("> 2", "> 10", "> 20", "> 30", "> 40")
 
 ### color scheme 
-snp_indel_sv_vrnt_colors <- c("snp"="#DC853E", #DDCC77", 
-                           "indel"="#44AA99", #'#44AA99', 
+snp_indel_sv_vrnt_colors <- c("snp"="#DC853E", 
+                           "indel"="#44AA99", 
                            "all_sv"="#332288")
+
+snp_indel_vrnt_colors <- c("snp"="#DC853E", 
+                           "indel"="#44AA99")
 
 sv_vrnt_colors <- c("INV" = "#0081C1", #'#CC6677', #5CC9FF
                     'DEL' = '#E04B4B', 
@@ -31,6 +34,9 @@ sv_vrnt_colors <- c("INV" = "#0081C1", #'#CC6677', #5CC9FF
 snv_indel_sv_labeller <- c("snp"="SNV",  
                            "indel"="Indel", 
                            "all_sv"="SV")
+
+snv_indel_labeller <- c("snp"="SNV",  
+                        "indel"="Indel")
 
 sv_class_labeller <- c("DEL"="Deletions", 
                        "DUP"="Duplications", 
@@ -45,9 +51,6 @@ wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thoma
 # Fig. 2
 fig2_out_dir <- file.path(wkdir, "figs/fig_2")
 dir.create(file.path(fig2_out_dir))
-# Supplementary Fig. 5
-supp_fig5_out_dir <- file.path(wkdir, "figs/supp_fig_5")
-dir.create(file.path(supp_fig5_out_dir))
 # Supplementary Fig. 6
 supp_fig6_out_dir <- file.path(wkdir, "figs/supp_fig_6")
 dir.create(file.path(supp_fig6_out_dir))
@@ -57,6 +60,15 @@ dir.create(file.path(supp_fig7_out_dir))
 # Supplementary Fig. 8
 supp_fig8_out_dir <- file.path(wkdir, "figs/supp_fig_8")
 dir.create(file.path(supp_fig8_out_dir))
+# Supplementary Fig. 9
+supp_fig9_out_dir <- file.path(wkdir, "figs/supp_fig_9")
+dir.create(file.path(supp_fig9_out_dir))
+# Supplementary Fig. 10
+supp_fig10_out_dir <- file.path(wkdir, "figs/supp_fig_10")
+dir.create(file.path(supp_fig10_out_dir))
+# Supplementary Fig. 11
+supp_fig11_out_dir <- file.path(wkdir, "figs/supp_fig_11")
+dir.create(file.path(supp_fig11_out_dir))
 ```
 
 ### SNV, indel, SV MAF and z-score cutoffs 
@@ -87,7 +99,7 @@ theme.snv_indel_sv_maf_z <- function(p, base_size = 11, base_family = "Helvetica
   return(p)
 }
 
-snv_indel_sv_results_path <- file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/snp_indel_sv_gene_window_results.tsv")
+snv_indel_sv_results_path <- file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/snp_indel_sv_gene_window_results.tsv")
 snv_indel_sv_results_df <- read.csv(snv_indel_sv_results_path, sep="\t")
 
 # factor for MAF range
@@ -112,7 +124,7 @@ snv_indel_sv_enrich_gene_body <- ggplot(snv_indel_sv_z_cutoff_results_df, aes(x=
   geom_point(position = position_dodge(width = 0.6), size=3) + 
   geom_errorbar(aes(ymin=risk_ratio_lower, ymax=risk_ratio_upper),cex=1, width=0, position = position_dodge(width=0.6)) + 
   scale_x_discrete(name = "Misexpression z-score threshold", labels=c("2", "10", "20", "30", "40", "50")) +
-  scale_y_continuous(name = "Enrichment", breaks=c(1, 3, 5, 7, 9), limits=c(0, 8.5), expand=c(0,0)) +
+  scale_y_continuous(name = "Enrichment", breaks=c(1, 10, 20, 30), limits=c(0, 32), expand=c(0.1,0.1)) +
   scale_color_manual(name = '', 
                     labels=snv_indel_sv_labeller,
                     values= snp_indel_sv_vrnt_colors, 
@@ -128,11 +140,9 @@ theme.snv_indel_sv_maf_z(snv_indel_sv_enrich_gene_body)
 snv_indel_sv_z_path_nolog_png <- file.path(fig2_out_dir, "snv_indel_sv_enrich_gene_body.png")
 ggsave(snv_indel_sv_z_path_nolog_png, width=9, height=3.5, dpi=360)
 ```
-
-### Percentage misexpression carriers at different z-score cuttoffs
+### Percentage misexpression carriers at different z-score cuttoffs (+/- 200kb window)
 ```{r}
-### Inactive gene set QC summary 
-perc_misexp_carrier_path <- file.path(wkdir, "4_vrnt_enrich/combine_count_carriers/perc_misexp_carrier_zscores.tsv")
+perc_misexp_carrier_path <- file.path(wkdir, "4_vrnt_enrich/combine_count_carriers/perc_misexp_carrier_zscores_200kb.tsv")
 perc_misexp_carrier_df <- read.csv(perc_misexp_carrier_path, sep="\t")
 
 perc_misexp_carrier_df$z.score <- factor(perc_misexp_carrier_df$z.score, levels=z_cutoffs_names)
@@ -140,7 +150,7 @@ perc_misexp_carrier_df$z.score <- factor(perc_misexp_carrier_df$z.score, levels=
 # save figure 
 width=6
 height=5
-perc_misexp_carrier_zscore_pdf = file.path(supp_fig5_out_dir, "perc_misexp_carrier_zscore.pdf")
+perc_misexp_carrier_zscore_pdf = file.path(supp_fig6_out_dir, "perc_misexp_carrier_zscore_200kb.pdf")
 pdf(file=perc_misexp_carrier_zscore_pdf, width = width, height = height, useDingbats=FALSE)
 
 theme.perc_misexp_carrier <- function(p, base_size = 11, base_family = "Helvetica") {
@@ -172,8 +182,59 @@ perc_misexp_carrier_fig <- ggplot(perc_misexp_carrier_df, aes(y=perc_carrier, x=
 theme.perc_misexp_carrier(perc_misexp_carrier_fig)
 dev.off()
 theme.perc_misexp_carrier(perc_misexp_carrier_fig)
-perc_misexp_carrier_zscore_png <- file.path(supp_fig5_out_dir, "perc_misexp_carrier_zscore.png")
+perc_misexp_carrier_zscore_png <- file.path(supp_fig6_out_dir, "perc_misexp_carrier_zscore_200kb.png")
 ggsave(perc_misexp_carrier_zscore_png, width=width, height=height, dpi=360)
+```
+```{r}
+perc_misexp_carrier_path <- file.path(wkdir, "4_vrnt_enrich/combine_count_carriers/perc_misexp_carrier_zscores_10kb.tsv")
+perc_misexp_carrier_df <- read.csv(perc_misexp_carrier_path, sep="\t")
+
+perc_misexp_carrier_df$z.score <- factor(perc_misexp_carrier_df$z.score, levels=z_cutoffs_names)
+
+# save figure 
+width=6
+height=5
+perc_misexp_carrier_zscore_pdf = file.path(supp_fig6_out_dir, "perc_misexp_carrier_zscore_10kb.pdf")
+pdf(file=perc_misexp_carrier_zscore_pdf, width = width, height = height, useDingbats=FALSE)
+
+perc_misexp_carrier_fig <- ggplot(perc_misexp_carrier_df, aes(y=perc_carrier, x=z.score)) +
+   geom_bar(stat = "identity", fill = "#5B84B1FF", alpha = 0.5, color="black", size=ticks_size) + 
+   scale_y_continuous(name = "% misexpression events with SV within 10 kb", limits=c(0,3), expand=c(0,0)) + 
+   scale_x_discrete(name = "Misexpression z-score threshold", expand=c(0.1, 0.1)) + 
+   geom_text(aes(label = round(misexp_carrier, 1)), vjust =-0.5, size = 4.5, fontface="plain", color="black")
+theme.perc_misexp_carrier(perc_misexp_carrier_fig)
+dev.off()
+theme.perc_misexp_carrier(perc_misexp_carrier_fig)
+perc_misexp_carrier_zscore_png <- file.path(supp_fig6_out_dir, "perc_misexp_carrier_zscore_10kb.png")
+ggsave(perc_misexp_carrier_zscore_png, width=width, height=height, dpi=360)
+```
+
+### SNV, and indel, MAF and z-score cutoffs (Zoomed in plot of SNVs and indels only)
+```{r}
+snv_indel_z_nolog_path <- file.path(supp_fig7_out_dir, "snv_indel_enrich_gene_body_zoom.pdf")
+pdf(snv_indel_z_nolog_path, width = 9, height = 3.5, useDingbats=FALSE)
+
+snv_indel_enrich_gene_body <- ggplot(snv_indel_sv_z_cutoff_results_df[snv_indel_sv_z_cutoff_results_df$vrnt_type %in% {c("snp", "indel")},],
+                                        aes(x=z_cutoff_name, y=risk_ratio, color=vrnt_type)) + 
+  geom_hline(yintercept=1.0, linetype="solid", size=ticks_size) + 
+  geom_point(position = position_dodge(width = 0.6), size=3) + 
+  geom_errorbar(aes(ymin=risk_ratio_lower, ymax=risk_ratio_upper),cex=1, width=0, position = position_dodge(width=0.6)) + 
+  scale_x_discrete(name = "Misexpression z-score threshold", labels=c("2", "10", "20", "30", "40", "50")) +
+  scale_y_continuous(name = "Enrichment", breaks=c(0.8, 1, 1.2, 1.4, 1.6), limits=c(0.75, 1.5), expand=c(0,0)) +
+  scale_color_manual(name = '', 
+                    labels=snv_indel_labeller,
+                    values= snp_indel_vrnt_colors, 
+                    ) +
+  facet_grid(.~maf_range, scales = "free", space = "free", switch='y', labeller = as_labeller(facet_labels)) + 
+  geom_text(aes(label = ifelse(bonferroni_pass  == "True"  & risk_ratio > 1, "*", ""), y=risk_ratio_upper), hjust = 0.5, vjust = -0.25, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  geom_text(aes(label = ifelse(bonferroni_pass  == "True" & risk_ratio < 1, "*", ""), y=risk_ratio_lower), hjust = 0.5, vjust = 1.75, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  guides(fill = guide_legend(override.aes = list(label = NULL)))
+
+theme.snv_indel_sv_maf_z(snv_indel_enrich_gene_body)
+dev.off()
+theme.snv_indel_sv_maf_z(snv_indel_enrich_gene_body)
+snv_indel_z_path_nolog_png <- file.path(supp_fig7_out_dir, "snv_indel_enrich_gene_body_zoom.png")
+ggsave(snv_indel_z_path_nolog_png, width=9, height=3.5, dpi=360)
 ```
 ### SNV, indel and SV variant enrichment across windows 
 ```{r}
@@ -202,7 +263,7 @@ theme.snp_indel_sv_window <- function(p, base_size = 11, base_family = "Helvetic
   return(p)
 }
 
-snp_indel_sv_window_bins_path <- file.path(wkdir,"4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/snp_indel_sv_maf_0_1perc_window_bin_results.tsv")
+snp_indel_sv_window_bins_path <- file.path(wkdir,"4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/snp_indel_sv_maf_0_1perc_window_bin_results.tsv")
 snp_indel_sv_window_bins_df <- read.csv(snp_indel_sv_window_bins_path, sep="\t")
 # factor for z-score cutoffs 
 snp_indel_sv_window_bins_z_subset_df <- subset(snp_indel_sv_window_bins_df, snp_indel_sv_window_bins_df$z_cutoff %in% z_cutoffs_to_show)
@@ -247,7 +308,6 @@ theme.snp_indel_sv_window(snv_indel_sv_z_window)
 snv_indel_sv_z_window_path_png <- file.path(fig2_out_dir, "snv_indel_sv_enrich_windows_stacked.png")
 ggsave(snv_indel_sv_z_window_path_png, width = width, height = height, dpi=360)
 ```
-
 ### SNV, indel and SV variant enrichment across windows and multiple z-score thresholds 
 ```{r}
 ### Windows supplementary figure 
@@ -276,7 +336,7 @@ theme.misexp_snv_indel_windows_z <- function(p, base_size = 11, base_family = "H
   return(p)
 }
 
-snv_indel_sv_z_window_z_cutoffs_path = file.path(supp_fig6_out_dir, "snv_indel_sv_enrich_windows_z_cutoffs.pdf")
+snv_indel_sv_z_window_z_cutoffs_path = file.path(supp_fig8_out_dir, "snv_indel_sv_enrich_windows_z_cutoffs.pdf")
 pdf(snv_indel_sv_z_window_z_cutoffs_path, width=9, height=10, useDingbats=FALSE)
 
 snv_indel_sv_window_z_cutoffs <- ggplot(snp_indel_sv_window_bins_z_subset_df, aes(x=factor(window_name, level=level_order), y=risk_ratio, color=vrnt_type)) + 
@@ -284,7 +344,7 @@ snv_indel_sv_window_z_cutoffs <- ggplot(snp_indel_sv_window_bins_z_subset_df, ae
 geom_point(position = position_dodge(width = 0.6), size=3) +
 ggtitle("") +
 geom_errorbar(aes(ymin=risk_ratio_lower, ymax=risk_ratio_upper),cex=1, width=0, position = position_dodge(width = 0.6)) + 
-scale_x_discrete(name = "Genomic window") + #, labels=x_axis_labels) +
+scale_x_discrete(name = "Genomic window") + 
 scale_y_continuous(name = "Enrichment", 
                    expand=c(0.2,0.2)
                   ) + 
@@ -300,8 +360,39 @@ scale_colour_manual(name = 'Variant\n  Type',
 theme.misexp_snv_indel_windows_z(snv_indel_sv_window_z_cutoffs)
 dev.off()
 theme.misexp_snv_indel_windows_z(snv_indel_sv_window_z_cutoffs)
-snv_indel_sv_enrich_windows_z_cutoffs_png <- file.path(supp_fig6_out_dir, "snv_indel_sv_enrich_windows_z_cutoffs.png")
+snv_indel_sv_enrich_windows_z_cutoffs_png <- file.path(supp_fig8_out_dir, "snv_indel_sv_enrich_windows_z_cutoffs.png")
 ggsave(snv_indel_sv_enrich_windows_z_cutoffs_png, width=9, height=10, dpi=360)
+```
+### SNV and indel variant enrichment across windows and multiple z-score thresholds (zoomed in on SNVs and indels only)
+```{r}
+snv_indel_z_window_z_cutoffs_path = file.path(supp_fig9_out_dir, "snv_indel_enrich_windows_z_cutoffs_zoom.pdf")
+pdf(snv_indel_z_window_z_cutoffs_path, width=9, height=10, useDingbats=FALSE)
+
+snv_indel_window_z_cutoffs <- ggplot(snp_indel_sv_window_bins_z_subset_df[snp_indel_sv_window_bins_z_subset_df$vrnt_type %in% c("snp", "indel"),], 
+                                     aes(x=factor(window_name, level=level_order), y=risk_ratio, color=vrnt_type)) +
+    geom_hline(yintercept=1.0, linetype="solid", size=ticks_size) + 
+geom_point(position = position_dodge(width = 0.6), size=3) +
+ggtitle("") +
+geom_errorbar(aes(ymin=risk_ratio_lower, ymax=risk_ratio_upper),cex=1, width=0, position = position_dodge(width = 0.6)) + 
+scale_x_discrete(name = "Genomic window") + #, labels=x_axis_labels) +
+scale_y_continuous(name = "Enrichment", 
+                   expand=c(0.1,0.1), 
+                   limits=c(0.75, 1.25)
+                  ) + 
+scale_colour_manual(name = 'Variant\n  Type', 
+                    values= snp_indel_sv_vrnt_colors, 
+                    labels=snv_indel_sv_labeller,
+                    guide="none") +
+  facet_grid(z_cutoff_name~., space="fixed") + 
+  geom_text(aes(label = ifelse(bonferroni_pass  == "True"  & risk_ratio > 1, "*", ""), y=risk_ratio_upper), hjust = 0.5, vjust = -0.25, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  geom_text(aes(label = ifelse(bonferroni_pass  == "True" & risk_ratio < 1, "*", ""), y=risk_ratio_lower), hjust = 0.5, vjust = 1.75, position = position_dodge(width = 0.6), size=4.5, fontface="bold", show.legend  = FALSE) + 
+  guides(fill = guide_legend(override.aes = list(label = NULL)))
+
+theme.misexp_snv_indel_windows_z(snv_indel_window_z_cutoffs)
+dev.off()
+theme.misexp_snv_indel_windows_z(snv_indel_window_z_cutoffs)
+snv_indel_enrich_windows_z_cutoffs_png <- file.path(supp_fig9_out_dir, "snv_indel_enrich_windows_z_cutoffs_zoom.png")
+ggsave(snv_indel_enrich_windows_z_cutoffs_png, width=9, height=10, dpi=360)
 ```
 
 ### Enrichment of rare DEL and DUP near to misexpressed genes  
@@ -332,7 +423,7 @@ theme.sv_class_enrich <- function(p, base_size = 11, base_family = "Helvetica") 
   return(p)
 }
 
-sv_types_enrich_results_all_path = file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/sv_types_maf_0_1perc_200kb_all_z_results.tsv")
+sv_types_enrich_results_all_path = file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/sv_types_maf_0_1perc_200kb_all_z_results.tsv")
 sv_types_enrich_results_all_df <- read.csv(sv_types_enrich_results_all_path, sep="\t")
 
 # factor z-score cutoffs 
@@ -375,7 +466,7 @@ inv_mei_z_cutoff_subset_results_df <- subset(sv_types_z_cutoff_subset_results_df
 
 width = 8 
 height = 4
-rare_inv_mei_type_enrich_path = file.path(supp_fig7_out_dir, "rare_inv_mei_enrich_gene_body.pdf")
+rare_inv_mei_type_enrich_path = file.path(supp_fig10_out_dir, "rare_inv_mei_enrich_gene_body.pdf")
 pdf(rare_inv_mei_type_enrich_path, width = width, height = height, useDingbats=FALSE)
 
 inv_mei_enrich <- ggplot(inv_mei_z_cutoff_subset_results_df, aes(y=risk_ratio, x=z_cutoff_name, color=vrnt_type)) + 
@@ -393,7 +484,7 @@ inv_mei_enrich <- ggplot(inv_mei_z_cutoff_subset_results_df, aes(y=risk_ratio, x
 theme.sv_class_enrich(inv_mei_enrich)
 dev.off()
 theme.sv_class_enrich(inv_mei_enrich)
-rare_inv_mei_type_enrich_png <- file.path(supp_fig7_out_dir, "rare_inv_mei_enrich_gene_body.png")
+rare_inv_mei_type_enrich_png <- file.path(supp_fig10_out_dir, "rare_inv_mei_enrich_gene_body.png")
 ggsave(rare_inv_mei_type_enrich_png, width = width, height = height, dpi=600)
 ```
 
@@ -425,7 +516,7 @@ theme.sv_class_window_enrich <- function(p, base_size = 11, base_family = "Helve
   return(p)
 }
 
-sv_types_window_enrich_results_path <- file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/sv_types_maf_0_1perc_windows_all_z_results.tsv")
+sv_types_window_enrich_results_path <- file.path(wkdir, "4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/sv_types_maf_0_1perc_windows_all_z_results.tsv")
 sv_types_window_enrich_results_df <- read.csv(sv_types_window_enrich_results_path, sep="\t") 
 window_labels_ordered = c("-800kb to -1Mb", "-600kb to -800kb", "-400kb to -600kb", "-200kb to -400kb", "TSS to -200kb", "gene body", 
                           "TTS to 200kb", "200kb to 400kb", "400kb to 600kb", "600kb to 800kb", "800kb to 1Mb")    
@@ -491,7 +582,7 @@ theme.sv_class_window_enrich_supp <- function(p, base_size = 11, base_family = "
 sv_types_window_enrich_results_z_cutoffs_df <- subset(sv_types_window_enrich_results_df, sv_types_window_enrich_results_df$z_cutoff %in% c(2, 10, 20, 30, 40) & sv_types_window_enrich_results_df$vrnt_type != "MEI")
 sv_types_window_enrich_results_z_cutoffs_df$z_cutoff_name <- factor(sv_types_window_enrich_results_z_cutoffs_df$z_cutoff_name, levels=c("> 2", "> 10", "> 20", "> 30", "> 40"))
 
-rare_sv_type_enrich_z_cutoffs_path = file.path(supp_fig7_out_dir, "rare_sv_types_enrich_windows_z_cutoffs.pdf")
+rare_sv_type_enrich_z_cutoffs_path = file.path(supp_fig10_out_dir, "rare_sv_types_enrich_windows_z_cutoffs.pdf")
 pdf(rare_sv_type_enrich_z_cutoffs_path, width = 12,height = 10, useDingbats=FALSE)
 
 sv_class_window_labeller <- c("DEL"="Deletions", 
@@ -522,7 +613,7 @@ sv_class_window_enrich_fig <- ggplot(sv_types_window_enrich_results_z_cutoffs_df
 theme.sv_class_window_enrich_supp(sv_class_window_enrich_fig)
 dev.off()
 theme.sv_class_window_enrich_supp(sv_class_window_enrich_fig)
-rare_sv_type_enrich_z_cutoffs_path_png <- file.path(supp_fig7_out_dir, "rare_sv_types_enrich_windows_z_cutoffs.png")
+rare_sv_type_enrich_z_cutoffs_path_png <- file.path(supp_fig10_out_dir, "rare_sv_types_enrich_windows_z_cutoffs.png")
 ggsave(rare_sv_type_enrich_z_cutoffs_path_png, width=12, height=10, dpi=360)
 ```
 
@@ -555,7 +646,7 @@ theme.sv_class_enrich <- function(p, base_size = 11, base_family = "Helvetica") 
   return(p)
 }
 # z-cutoff 
-sv_msc_enrich_results_path <- file.path(wkdir,'4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/sv_consq_pass_bonf_z10.tsv')
+sv_msc_enrich_results_path <- file.path(wkdir,'4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/sv_consq_pass_bonf_z10.tsv')
 sv_msc_enrich_results_df = read.csv(sv_msc_enrich_results_path, sep="\t", stringsAsFactors = FALSE)
 # order consequences 
 sv_consequence_order <- rev(unique(c('Upstream', 'Non-coding transcript','Coding','Transcript amplification','No predicted effect')))
@@ -616,7 +707,7 @@ theme.sv_class_enrich <- function(p, base_size = 11, base_family = "Helvetica") 
   return(p)
 }
 
-sv_msc_enrich_results_path <-file.path(wkdir,'4_vrnt_enrich/enrich_results_mul_test/grouped_enrich/sv_consq_pass_bonf.tsv')
+sv_msc_enrich_results_path <-file.path(wkdir,'4_vrnt_enrich/enrich_results_mul_test/grouped_enrich_gene_body_10kb/sv_consq_pass_bonf.tsv')
 sv_msc_enrich_results_df <- read.csv(sv_msc_enrich_results_path, sep="\t")
 
 sv_msc_enrich_results_df <- subset(sv_msc_enrich_results_df, sv_msc_enrich_results_df$z_cutoff %in% z_cutoffs_to_show)
@@ -635,7 +726,7 @@ sv_class_window_labeller <- c("DEL"="Deletions",
                               'No predicted effect'='No predicted effect'
                               )
 
-rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_pdf_path = file.path(supp_fig8_out_dir, "rare_sv_consq_by_gene_z10_200kb_gene_bonf_pass_any_all_zcutoff.pdf")
+rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_pdf_path = file.path(supp_fig11_out_dir, "rare_sv_consq_by_gene_z10_200kb_gene_bonf_pass_any_all_zcutoff.pdf")
 pdf(rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_pdf_path, width = 8,height = 7, useDingbats=FALSE)
 
 
@@ -657,6 +748,6 @@ sv_msc_all_enrich <- ggplot(sv_msc_enrich_results_df, aes(y=risk_ratio_pass, x=z
 theme.sv_class_enrich(sv_msc_all_enrich)
 dev.off()
 theme.sv_class_enrich(sv_msc_all_enrich)
-rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_png_path = file.path(supp_fig8_out_dir, "rare_sv_consq_by_gene_z10_200kb_gene_bonf_pass_any_all_zcutoff.png")
+rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_png_path = file.path(supp_fig11_out_dir, "rare_sv_consq_by_gene_z10_200kb_gene_bonf_pass_any_all_zcutoff.png")
 ggsave(rare_sv_msc_type_enrich_bonf_pass_all_zcutoff_png_path, width=8, height=7, dpi=360)
 ```

@@ -58,9 +58,9 @@ wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thoma
 # Fig. 3
 fig3_out_dir <- file.path(wkdir, "figs/fig_3")
 dir.create(file.path(fig3_out_dir))
-# supplementary Fig. 9
-supp_fig9_out_dir <- file.path(wkdir, "figs/supp_fig_9")
-dir.create(file.path(supp_fig9_out_dir))
+# supplementary Fig. 12
+supp_fig12_out_dir <- file.path(wkdir, "figs/supp_fig_12")
+dir.create(file.path(supp_fig12_out_dir))
 ```
 
 ### Number of misexpression-associated and control variants 
@@ -314,7 +314,7 @@ ggsave(misexp_sv_len_png, width=5.5, height=4, dpi=600)
 ### SV length comparison (singletons)
 ```{r}
 sv_in_window_len_info_no_mei_singletons_df = subset(sv_in_window_len_info_no_mei_df, AC ==1)
-misexp_sv_len_fig_singletons_path = file.path(supp_fig9_out_dir, "misexp_sv_len_singletons.pdf")
+misexp_sv_len_fig_singletons_path = file.path(supp_fig12_out_dir, "misexp_sv_len_singletons.pdf")
 pdf(misexp_sv_len_fig_singletons_path, width = 5.5,height = 4, useDingbats=FALSE)
 
 misexp_sv_len_singletons <- ggplot(sv_in_window_len_info_no_mei_singletons_df, aes(x=SVTYPE, y=SVLEN, color=group, fill=group)) + 
@@ -339,16 +339,9 @@ misexp_sv_len_singletons <- ggplot(sv_in_window_len_info_no_mei_singletons_df, a
 theme.misexp_svlen(misexp_sv_len_singletons)
 dev.off()
 theme.misexp_svlen(misexp_sv_len_singletons)
-misexp_sv_len_singletons_png <- file.path(supp_fig9_out_dir, "misexp_sv_len_singletons.png")
+misexp_sv_len_singletons_png <- file.path(supp_fig12_out_dir, "misexp_sv_len_singletons.png")
 ggsave(misexp_sv_len_singletons_png, width=5.5, height=4, dpi=600)
 ```
-```{r}
-sv_cnsvtn_cnstrt_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich.tsv")
-sv_cnsvtn_cnstrt_df <- read.csv(sv_cnsvtn_cnstrt_path, sep="\t")
-sv_cnsvtn_cnstrt_df
-```
-
-
 ### SV conservation, constraint and deleteriousness (length-adjusted)
 ```{r}
 theme.sv_constr_consv <- function(p, base_size = 11, base_family = "Helvetica") {
@@ -381,7 +374,6 @@ theme.sv_constr_consv <- function(p, base_size = 11, base_family = "Helvetica") 
 
 sv_cnsvtn_cnstrt_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich.tsv")
 sv_cnsvtn_cnstrt_df <- read.csv(sv_cnsvtn_cnstrt_path, sep="\t")
-sv_cnsvtn_cnstrt_df <- subset(sv_cnsvtn_cnstrt_df, region == "all")
 
 sv_class_labeller <- c("DEL"="Deletions", 
                        "DUP"="Duplications"
@@ -419,11 +411,13 @@ sv_cnsvtn_cnstrt_png <- file.path(fig3_out_dir, "sv_cnsvtn_cnstrt.png")
 ggsave(sv_cnsvtn_cnstrt_png, width=5.5, height=4, dpi=600)
 ```
 
+
+
+
 ### SV conservation, constraint and deleteriousness (not length-adjusted)
 ```{r}
 sv_cnsvtn_cnstrt_no_len_adj_path <- file.path(wkdir, "5_misexp_vrnts/scores/results/misexp_sv_scores_enrich_no_len_adj.tsv")
 sv_cnsvtn_cnstrt_no_len_adj_df <- read.csv(sv_cnsvtn_cnstrt_no_len_adj_path, sep="\t")
-sv_cnsvtn_cnstrt_no_len_adj_df <- subset(sv_cnsvtn_cnstrt_no_len_adj_df, region == "all")
 
 sv_class_labeller <- c("DEL"="Deletions", 
                        "DUP"="Duplications"
@@ -435,7 +429,7 @@ sv_cnsvtn_cnstrt_no_len_adj_df <- sv_cnsvtn_cnstrt_no_len_adj_df %>%
     feature_name = factor(feature_name, levels=rev(feature_name_order)),
   )
 
-sv_cnsvtn_cnstrt_no_len_adj_fig_path = file.path(supp_fig9_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.pdf")
+sv_cnsvtn_cnstrt_no_len_adj_fig_path = file.path(supp_fig12_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.pdf")
 pdf(sv_cnsvtn_cnstrt_no_len_adj_fig_path, width = 5.5,height = 4, useDingbats=FALSE)
 
 sv_constr_consv_no_len_adj_fig <- ggplot(sv_cnsvtn_cnstrt_no_len_adj_df, aes(y=feature_name, x=log_odds, color=sv_type)) + 
@@ -457,7 +451,7 @@ sv_constr_consv_no_len_adj_fig <- ggplot(sv_cnsvtn_cnstrt_no_len_adj_df, aes(y=f
 theme.sv_constr_consv(sv_constr_consv_no_len_adj_fig)
 dev.off()
 theme.sv_constr_consv(sv_constr_consv_no_len_adj_fig)
-sv_cnsvtn_cnstrt_no_len_adj_fig_png <- file.path(supp_fig9_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.png")
+sv_cnsvtn_cnstrt_no_len_adj_fig_png <- file.path(supp_fig12_out_dir, "sv_cnsvtn_cnstrt_no_len_adj.png")
 ggsave(sv_cnsvtn_cnstrt_no_len_adj_fig_png, width=5.5, height=4, dpi=600)
 ```
 
@@ -553,7 +547,6 @@ draw(hm_sv_func_features)
 all_func_enrich_results_path <-  file.path(wkdir, "5_misexp_vrnts/functional/results/logr_func_enrich_results_all_no_len_adj.tsv")
 all_func_enrich_results_df = read.csv(all_func_enrich_results_path, sep="\t")
 
-all_func_enrich_results_df[, c("sv_type", "log_odds_adj", "feature_name", "category_name")]
 all_func_enrich_results_order_df <- all_func_enrich_results_df[order(all_func_enrich_results_df$category_name, decreasing = TRUE), ]
 
 # row split 
@@ -579,7 +572,7 @@ min_log_odds_round <- floor(min_log_odds)
 # colormap
 my_colors <- colorRamp2(c(-1, 0, 1), c("red", "white", "blue"))
 
-dup_del_all_reg_enrich_path = file.path(supp_fig9_out_dir, "dup_del_enrich_heatmap_all_no_len_adj.pdf")
+dup_del_all_reg_enrich_path = file.path(supp_fig12_out_dir, "dup_del_enrich_heatmap_all_no_len_adj.pdf")
 pdf(dup_del_all_reg_enrich_path, width = 10,height = 4, useDingbats=FALSE)
 feature_logr_mat_tp <- t(feature_logr_mat)
 hm_sv_func_features <- Heatmap(feature_logr_mat_tp, 

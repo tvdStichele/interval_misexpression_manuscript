@@ -27,9 +27,9 @@ wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thoma
 # Fig. 2
 fig4_out_dir <- file.path(wkdir, "figs/fig_4")
 dir.create(file.path(fig4_out_dir))
-# Supplementary Fig 
-supp_fig10_out_dir <- file.path(wkdir, "figs/supp_fig_10")
-dir.create(file.path(supp_fig10_out_dir))
+# Supplementary Fig 13
+supp_fig13_out_dir <- file.path(wkdir, "figs/supp_fig_13")
+dir.create(file.path(supp_fig13_out_dir))
 ```
 
 ```{r}
@@ -110,7 +110,7 @@ ggsave(readthrough_rpkm_misexp_zscore_png, width=4, height=4, dpi=600)
 
 ### Relationship between readthrough FBNC and misexpression level 
 ```{r}
-readthrough_cov_misexp_zscore_pdf = file.path(fig4_out_dir, "del_dup_tx_readthrough_cov_misexp_zscore.pdf")
+readthrough_cov_misexp_zscore_pdf = file.path(fig4_out_dir, "del_dup_tx_readthrough_fbnc_misexp_zscore.pdf")
 pdf(readthrough_cov_misexp_zscore_pdf, width = 4,height = 4, useDingbats=FALSE)
 
 del_dup_cov_misexp_zscore <- ggplot() +  
@@ -217,7 +217,7 @@ theme.fpkm_coverage_raw <- function(p, base_size = 11, base_family = "Helvetica"
   return(p)
 }
 
-readthrough_fpkm_raw_path = file.path(supp_fig10_out_dir, "readthrough_fpkm_raw.pdf")
+readthrough_fpkm_raw_path = file.path(supp_fig13_out_dir, "readthrough_fpkm_raw.pdf")
 pdf(readthrough_fpkm_raw_path, width = 6,height = 4, useDingbats=FALSE)
 
 readthrough_fpkm_raw <- ggplot() +  
@@ -230,7 +230,7 @@ readthrough_fpkm_raw <- ggplot() +
   
 theme.fpkm_coverage_raw(readthrough_fpkm_raw)
 dev.off()
-readthrough_fpkm_raw_png = file.path(supp_fig10_out_dir, "readthrough_fpkm_raw.png")
+readthrough_fpkm_raw_png = file.path(supp_fig13_out_dir, "readthrough_fpkm_raw.png")
 theme.fpkm_coverage_raw(readthrough_fpkm_raw)
 ggsave(readthrough_fpkm_raw_png, width=6, height=4, dpi=600)
 ```
@@ -238,7 +238,7 @@ ggsave(readthrough_fpkm_raw_png, width=6, height=4, dpi=600)
 ### Fig. FBNC per variant-gene pair across all samples 
 ```{r}
 ### Supplementary raw coverage per variant-gene pair
-readthrough_coverage_raw_path = file.path(supp_fig10_out_dir, "readthrough_fbnc_raw.pdf")
+readthrough_coverage_raw_path = file.path(supp_fig13_out_dir, "readthrough_fbnc_raw.pdf")
 pdf(readthrough_coverage_raw_path, width = 6,height = 4, useDingbats=FALSE)
 
 readthrough_coverage_raw <- ggplot() +  
@@ -251,7 +251,7 @@ readthrough_coverage_raw <- ggplot() +
   
 theme.fpkm_coverage_raw(readthrough_coverage_raw)
 dev.off()
-readthrough_coverage_raw_png = file.path(supp_fig10_out_dir, "readthrough_fbnc_raw.png")
+readthrough_coverage_raw_png = file.path(supp_fig13_out_dir, "readthrough_fbnc_raw.png")
 theme.fpkm_coverage_raw(readthrough_coverage_raw)
 ggsave(readthrough_coverage_raw_png, width=6, height=4, dpi=600)
 ```
@@ -300,7 +300,7 @@ consq_colors <- c("Transcript amplification"="#76438C",
                  "Non-coding transcript"="#A4A0CA", 
                  "No predicted effect"="#E2E2E2") 
 
-tx_readthrough_del_dup_consq_path = file.path(supp_fig10_out_dir, "tx_readthrough_del_dup_consq.pdf")
+tx_readthrough_del_dup_consq_path = file.path(supp_fig13_out_dir, "tx_readthrough_del_dup_consq.pdf")
 pdf(tx_readthrough_del_dup_consq_path, width = 3.5,height = 5, useDingbats=FALSE)
 
 tx_readthrough_vrnt_consq_fig <- ggplot(tx_readthrough_consq_df, aes(x=SVTYPE, y=vrnt_count, label=vrnt_count, color=consq_name, fill=consq_name)) +  
@@ -322,7 +322,7 @@ tx_readthrough_vrnt_consq_fig <- ggplot(tx_readthrough_consq_df, aes(x=SVTYPE, y
 
 theme.tx_readthrough_sv_types(tx_readthrough_vrnt_consq_fig)
 dev.off()
-tx_readthrough_del_dup_consq_png = file.path(supp_fig10_out_dir, "tx_readthrough_del_dup_consq.png")
+tx_readthrough_del_dup_consq_png = file.path(supp_fig13_out_dir, "tx_readthrough_del_dup_consq.png")
 theme.tx_readthrough_sv_types(tx_readthrough_vrnt_consq_fig)
 ggsave(tx_readthrough_del_dup_consq_png, width=3.5, height=5, dpi=600)
 ```
@@ -425,7 +425,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                          )
 
 
-otp_carrier_tpm_fig <- file.path(supp_fig10_out_dir, "otp_carrier_noncarrier.pdf")
+otp_carrier_tpm_fig <- file.path(supp_fig13_out_dir, "otp_carrier_noncarrier.pdf")
 pdf(otp_carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 otp_carrier_tpm_fig <- ggplot(otp_carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -437,7 +437,7 @@ otp_carrier_tpm_fig <- ggplot(otp_carrier_df, aes(x=status, y=TPM, color=misexp)
 
 theme.misexp_carrier_fig(otp_carrier_tpm_fig)
 dev.off()
-otp_carrier_tpm_fig_png <- file.path(supp_fig10_out_dir, "otp_carrier_noncarrier.png")
+otp_carrier_tpm_fig_png <- file.path(supp_fig13_out_dir, "otp_carrier_noncarrier.png")
 theme.misexp_carrier_fig(otp_carrier_tpm_fig)
 ggsave(otp_carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```

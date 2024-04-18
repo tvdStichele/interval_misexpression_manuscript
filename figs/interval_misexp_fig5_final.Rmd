@@ -15,12 +15,12 @@ wkdir <- "/lustre/scratch126/humgen/projects/interval_rna/interval_rna_seq/thoma
 # Fig. 5
 fig5_out_dir <- file.path(wkdir, "figs/fig_5")
 dir.create(file.path(fig5_out_dir))
-# Supplementary Fig. 11
-supp_fig11_out_dir <- file.path(wkdir, "figs/supp_fig_11")
-dir.create(file.path(supp_fig11_out_dir))
-# Supplementary Fig. 12
-supp_fig12_out_dir <- file.path(wkdir, "figs/supp_fig_12")
-dir.create(file.path(supp_fig12_out_dir))
+# Supplementary Fig. 14
+supp_fig14_out_dir <- file.path(wkdir, "figs/supp_fig_14")
+dir.create(file.path(supp_fig14_out_dir))
+# Supplementary Fig. 15
+supp_fig15_out_dir <- file.path(wkdir, "figs/supp_fig_15")
+dir.create(file.path(supp_fig15_out_dir))
 ```
 
 ```{r}
@@ -99,7 +99,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                    'Not misexpressed' = '#909090' # grey
                          )
 
-cphxl_carrier_tpm_fig <- file.path(supp_fig11_out_dir, "cphxl_carrier_noncarrier.pdf")
+cphxl_carrier_tpm_fig <- file.path(supp_fig14_out_dir, "cphxl_carrier_noncarrier.pdf")
 pdf(cphxl_carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 cphxl_carrier_tpm_fig <- ggplot(cphxl_carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -111,7 +111,7 @@ cphxl_carrier_tpm_fig <- ggplot(cphxl_carrier_df, aes(x=status, y=TPM, color=mis
 
 theme.misexp_carrier_fig(cphxl_carrier_tpm_fig)
 dev.off()
-cphxl_carrier_tpm_fig_png <- file.path(supp_fig11_out_dir, "cphxl_carrier_noncarrier.png")
+cphxl_carrier_tpm_fig_png <- file.path(supp_fig14_out_dir, "cphxl_carrier_noncarrier.png")
 theme.misexp_carrier_fig(cphxl_carrier_tpm_fig)
 ggsave(cphxl_carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```
@@ -127,7 +127,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                    'Not misexpressed' = '#909090' # grey
                          )
 
-carrier_tpm_fig <- file.path(supp_fig11_out_dir, "linc02308_carrier_noncarrier.pdf")
+carrier_tpm_fig <- file.path(supp_fig14_out_dir, "linc02308_carrier_noncarrier.pdf")
 pdf(carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -139,7 +139,7 @@ carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) +
 
 theme.misexp_carrier_fig(carrier_tpm_fig)
 dev.off()
-carrier_tpm_fig_png <- file.path(supp_fig11_out_dir, "linc02308_carrier_noncarrier.png")
+carrier_tpm_fig_png <- file.path(supp_fig14_out_dir, "linc02308_carrier_noncarrier.png")
 theme.misexp_carrier_fig(carrier_tpm_fig)
 ggsave(carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```
@@ -155,7 +155,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                    'Not misexpressed' = '#909090' # grey
                          )
 
-carrier_tpm_fig <- file.path(supp_fig11_out_dir, "linc01097_carrier_noncarrier.pdf")
+carrier_tpm_fig <- file.path(supp_fig14_out_dir, "linc01097_carrier_noncarrier.pdf")
 pdf(carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -167,7 +167,7 @@ carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) +
 
 theme.misexp_carrier_fig(carrier_tpm_fig)
 dev.off()
-carrier_tpm_fig_png <- file.path(supp_fig11_out_dir, "linc01097_carrier_noncarrier.png")
+carrier_tpm_fig_png <- file.path(supp_fig14_out_dir, "linc01097_carrier_noncarrier.png")
 theme.misexp_carrier_fig(carrier_tpm_fig)
 ggsave(carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```
@@ -183,7 +183,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                    'Not misexpressed' = '#909090' # grey
                          )
 
-carrier_tpm_fig <- file.path(supp_fig11_out_dir, "linc02268_carrier_noncarrier.pdf")
+carrier_tpm_fig <- file.path(supp_fig14_out_dir, "linc02268_carrier_noncarrier.pdf")
 pdf(carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -195,7 +195,7 @@ carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) +
 
 theme.misexp_carrier_fig(carrier_tpm_fig)
 dev.off()
-carrier_tpm_fig_png <- file.path(supp_fig11_out_dir, "linc02268_carrier_noncarrier.png")
+carrier_tpm_fig_png <- file.path(supp_fig14_out_dir, "linc02268_carrier_noncarrier.png")
 theme.misexp_carrier_fig(carrier_tpm_fig)
 ggsave(carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```
@@ -239,7 +239,7 @@ misexp_color <- c("Misexpressed" ='#FF4848', # misexpression
                    'Not misexpressed' = '#909090' # grey
                          )
 
-carrier_tpm_fig <- file.path(supp_fig12_out_dir, "alpi_carrier_noncarrier.pdf")
+carrier_tpm_fig <- file.path(supp_fig15_out_dir, "alpi_carrier_noncarrier.pdf")
 pdf(carrier_tpm_fig, width = 3, height = 4, useDingbats=FALSE)
 
 carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) + 
@@ -251,14 +251,13 @@ carrier_tpm_fig <- ggplot(carrier_df, aes(x=status, y=TPM, color=misexp)) +
 
 theme.misexp_carrier_fig(carrier_tpm_fig)
 dev.off()
-carrier_tpm_fig_png <- file.path(supp_fig12_out_dir, "alpi_carrier_noncarrier.png")
+carrier_tpm_fig_png <- file.path(supp_fig15_out_dir, "alpi_carrier_noncarrier.png")
 theme.misexp_carrier_fig(carrier_tpm_fig)
 ggsave(carrier_tpm_fig_png, width=3, height=4, dpi=600)
 ```
-
-### ROPN1B transcript proportions
+### ROPN1B transcript proportions (including average across non-carriers with expression)
 ```{r}
-ropn1b_proport_tpm_path <- file.path(wkdir,"/6_misexp_dissect/other_mechanisms/605947_ENSG00000114547/ropn1b_proport_expression.tsv")
+ropn1b_proport_tpm_path <- file.path(wkdir,"/6_misexp_dissect/other_mechanisms/605947_ENSG00000114547/ropn1b_proport_expression_noncarrier.tsv")
 ropn1b_proport_tpm_df <- read.csv(ropn1b_proport_tpm_path, sep="\t")
 
 theme.misexp_tx_proport_fig <- function(p, base_size = 11, base_family = "Helvetica") {
@@ -282,18 +281,18 @@ theme.misexp_tx_proport_fig <- function(p, base_size = 11, base_family = "Helvet
           complete = TRUE,
           strip.placement = "outside",
           strip.background = element_blank(),
-          strip.text = element_blank(), #element_text(size=base_size+2, family = base_family, face="plain", hjust=0.5, vjust=1),
+          strip.text.y = element_text(size=base_size+2, family = base_family, face="plain", hjust=0, angle=0),
           plot.title = element_text(hjust=0.5),
           panel.spacing = unit(1, "lines"),
           plot.margin = margin(1, 1, 1, 1, "cm")
           )
   return(p)
 }
-ropn1b_proport_tx_fig_pdf <- file.path(fig5_out_dir, "ropn1b_proport_tx.pdf")
-pdf(ropn1b_proport_tx_fig_pdf, width = 6, height = 5, useDingbats=FALSE)
+ropn1b_proport_tx_fig_pdf <- file.path(fig5_out_dir, "ropn1b_proport_tx_noncarrier.pdf")
+pdf(ropn1b_proport_tx_fig_pdf, width = 6, height = 4, useDingbats=FALSE)
  
-transcript_order <- c( 'ENST00000508088.1', 'ENST00000504401.1', "ENST00000513830.5", "ENST00000511082.1", 'ENST00000505382.5',
-                       'ENST00000511035.5', 'ENST00000510450.1'
+transcript_order <- c( 'ENST00000511862.5', 'ENST00000251776.8', 'ENST00000508088.1', 'ENST00000504401.1', "ENST00000513830.5",
+                       "ENST00000511082.1", 'ENST00000505382.5','ENST00000511035.5', 'ENST00000510450.1'
                       )
 ropn1b_proport_tpm_tx_subset_df <- subset(ropn1b_proport_tpm_df, transcript_id %in% transcript_order)
 
@@ -301,7 +300,7 @@ ropn1b_proport_tpm_tx_subset_df$transcript_id <- factor(ropn1b_proport_tpm_tx_su
 
 ropn1b_tx_proport_fig <- ggplot(ropn1b_proport_tpm_tx_subset_df, aes(y = rna_id, x =perc_expression , fill = transcript_id)) +
   geom_bar(stat = "identity") +
-  scale_y_discrete(name = "Carriers") +
+  scale_y_discrete(name = "") +
   scale_x_continuous(name = "Transcript percentage", 
                      breaks=c(0, 25, 50, 75, 100),
                      labels=c("0%", "25%", "50%", "75%", "100%"),
@@ -314,16 +313,19 @@ ropn1b_tx_proport_fig <- ggplot(ropn1b_proport_tpm_tx_subset_df, aes(y = rna_id,
                               "ENST00000504401.1"="#FFB000",
                               "ENST00000505382.5"='#FE6100',
                               'ENST00000511035.5'='#785EF0', 
-                              'ENST00000510450.1' ='#648FFF'
+                              'ENST00000510450.1' ='#648FFF',
+                              'ENST00000511862.5' = '#48448E', 
+                              'ENST00000251776.8' = '#8DB4C3'
                               )
                     ) + 
-  guides(fill=guide_legend(ncol=2, bycol=TRUE)) 
+  guides(fill=guide_legend(ncol=2, bycol=TRUE)) + 
+  facet_grid(carrier~., scales = "free_y", space="free_y")
 
 theme.misexp_tx_proport_fig(ropn1b_tx_proport_fig)
 dev.off()
 theme.misexp_tx_proport_fig(ropn1b_tx_proport_fig)
-ropn1b_proport_tx_fig_png <- file.path(fig5_out_dir, "ropn1b_proport_tx.png")
-ggsave(ropn1b_proport_tx_fig_png, width=5, height=4, dpi=600)
+ropn1b_proport_tx_fig_png <- file.path(fig5_out_dir, "ropn1b_proport_tx_noncarrier.png")
+ggsave(ropn1b_proport_tx_fig_png, width=6, height=4, dpi=600)
 ```
 ### Count and Level of misexpression across mechanisms 
 ```{r}
@@ -399,5 +401,4 @@ dev.off()
 theme.misexp_mech_level(misexp_z_violin)
 misexp_mech_level_png <- file.path(fig5_out_dir, "misexp_mech_level.png")
 ggsave(misexp_mech_level_png, width=5.5, height=4, dpi=600)
-
 ```
