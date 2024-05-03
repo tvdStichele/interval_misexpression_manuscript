@@ -290,10 +290,22 @@ theme.misexp_tx_proport_fig <- function(p, base_size = 11, base_family = "Helvet
 }
 ropn1b_proport_tx_fig_pdf <- file.path(fig5_out_dir, "ropn1b_proport_tx_noncarrier.pdf")
 pdf(ropn1b_proport_tx_fig_pdf, width = 6, height = 4, useDingbats=FALSE)
- 
-transcript_order <- c( 'ENST00000511862.5', 'ENST00000251776.8', 'ENST00000508088.1', 'ENST00000504401.1', "ENST00000513830.5",
-                       "ENST00000511082.1", 'ENST00000505382.5','ENST00000511035.5', 'ENST00000510450.1'
+
+transcript_order <- c("ENST00000251776.8", "ENST00000511862.5", "ENST00000511035.5", "ENST00000511082.1", 
+                      "ENST00000513830.5", "ENST00000508088.1", "ENST00000504401.1", "ENST00000505382.5", "ENST00000510450.1")
+
+transcript_color <- c('ENST00000511862.5' = '#48448E', 
+                      'ENST00000251776.8' = '#8DB4C3',
+                      "ENST00000508088.1"="#DC267F",
+                      "ENST00000511082.1"= "#B953D9", 
+                      "ENST00000513830.5"= "#22EBB3",
+                      "ENST00000504401.1"="#FFB000",
+                      "ENST00000505382.5"='#FE6100',
+                      'ENST00000511035.5'='#785EF0', 
+                      'ENST00000510450.1' ='#648FFF'
                       )
+
+
 ropn1b_proport_tpm_tx_subset_df <- subset(ropn1b_proport_tpm_df, transcript_id %in% transcript_order)
 
 ropn1b_proport_tpm_tx_subset_df$transcript_id <- factor(ropn1b_proport_tpm_tx_subset_df$transcript_id, levels = transcript_order)
@@ -306,17 +318,7 @@ ropn1b_tx_proport_fig <- ggplot(ropn1b_proport_tpm_tx_subset_df, aes(y = rna_id,
                      labels=c("0%", "25%", "50%", "75%", "100%"),
                      expand=c(0.001,0.001)) + 
   scale_fill_manual(name="", 
-                    labels=transcript_order, 
-                    values= c("ENST00000508088.1"="#DC267F", 
-                              "ENST00000511082.1"= "#B953D9", 
-                              "ENST00000513830.5"= "#22EBB3",
-                              "ENST00000504401.1"="#FFB000",
-                              "ENST00000505382.5"='#FE6100',
-                              'ENST00000511035.5'='#785EF0', 
-                              'ENST00000510450.1' ='#648FFF',
-                              'ENST00000511862.5' = '#48448E', 
-                              'ENST00000251776.8' = '#8DB4C3'
-                              )
+                    values=transcript_color
                     ) + 
   guides(fill=guide_legend(ncol=2, bycol=TRUE)) + 
   facet_grid(carrier~., scales = "free_y", space="free_y")
@@ -327,6 +329,11 @@ theme.misexp_tx_proport_fig(ropn1b_tx_proport_fig)
 ropn1b_proport_tx_fig_png <- file.path(fig5_out_dir, "ropn1b_proport_tx_noncarrier.png")
 ggsave(ropn1b_proport_tx_fig_png, width=6, height=4, dpi=600)
 ```
+```{r}
+ropn1b_proport_tx_fig_png
+```
+
+
 ### Count and Level of misexpression across mechanisms 
 ```{r}
 theme.misexp_mech_level <- function(p, base_size = 11, base_family = "Helvetica") {

@@ -234,7 +234,32 @@ theme.sv_callset_af(sv_callset_af_fig)
 sv_type_af_dist_fig_png_path = file.path(supp_fig1_out_dir, "sv_callset_svtypes_af.png")
 ggsave(sv_type_af_dist_fig_png_path,  width = width, height = height, dpi=360)
 ```
+### SV length distribution split by allele frequency
+```{r}
+width = 6
+height = 9 
 
+sv_len_af_dist_fig_path = file.path(supp_fig1_out_dir, "sv_callset_svlen_af.pdf")
+pdf(sv_len_af_dist_fig_path, width = width, height = height, useDingbats=FALSE)
+
+sv_len_af_fig <- ggplot(sv_len_af_df, aes(y=factor(af_group, order), x=SVLEN, fill=SVTYPE)) + 
+  geom_violin(position = position_dodge(0.9)) + 
+  geom_boxplot(width=0.1, outlier.shape = NA, fill="white", position = position_dodge(0.9)) +
+  scale_y_discrete(name = "", 
+                   expand=c(0,0) 
+                   ) +
+  scale_x_continuous(name = "SV length",
+                     trans="log10", 
+                     breaks= c(100, 1000, 10000, 100000, 1000000),
+                     labels= c("100bp","1kb", "10kb", "100kb", "1Mb")) + 
+  facet_wrap(SVTYPE~., ncol=1, labeller=as_labeller(sv_class_labeller)) +
+  scale_fill_manual(values=sv_vrnt_colors, name="SV class") 
+theme.sv_callset_af(sv_len_af_fig)
+dev.off()
+theme.sv_callset_af(sv_len_af_fig)
+sv_len_af_dist_fig_png_path = file.path(supp_fig1_out_dir, "sv_callset_svlen_af.png")
+ggsave(sv_len_af_dist_fig_png_path,  width = width, height = height, dpi=360)
+```
 ### Aberrant sample QC 
 ```{r}
 aberrant_smpl_cutoff_path =  file.path(wkdir, "1_rna_seq_qc/aberrant_smpl_qc/aberrant_gene_count.csv")
@@ -995,6 +1020,35 @@ dev.off()
 
 ### HPO misexpression-tolerant underrepresentation (top 10, protein-coding only)
 ```{r}
+theme.hp_enrich <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.spacing = unit(0.2, "lines"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.x = element_line(size=0.75),
+          axis.ticks.y = element_blank(),
+          axis.ticks.length = unit(.25, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.line.x = element_line(color="black", size=0.75),
+          axis.line.y = element_line(color="black", size=0.75),
+          axis.title.y=element_text(size=base_size+2, family=base_family, face="plain", angle=90),
+          axis.text.y = element_blank(), #element_text(size=base_size-1, family=base_family, face="bold", color="black", hjust=1),
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          legend.position="bottom",
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5), 
+          strip.text.y = element_blank(), #element_text(size=base_size, family=base_family, angle = 0, hjust=0),
+    )
+  return(p)
+}
+
 gprofiler_protein_hp_results_path =file.path(wkdir, "3_misexp_genes/gprofiler_enrichment/gprofiler_hp_enrich_misexp_8650genes_protein_coding_log_odds.csv")
 gprofiler_protein_hp_results_df = read.csv(gprofiler_protein_hp_results_path, sep=',')
 
@@ -1030,9 +1084,40 @@ ggsave(never_misexp_hp_enrich_protein_png_path, width = 6, height = 4.5, dpi=600
 
 ### HPO misexpression-tolerant underrepresentation (all terms, protein-coding only)
 ```{r}
+theme.hp_enrich_all <- function(p, base_size = 11, base_family = "Helvetica") {
+  p <- p + theme_grey(base_size = base_size, base_family = base_family) %+replace%
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.spacing = unit(0.2, "lines"),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          axis.line = element_line(color="black", size=0.75),
+          axis.ticks.x = element_line(size=0.75),
+          axis.ticks.y = element_blank(),
+          axis.ticks.length = unit(.25, "cm"),
+          axis.title.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          axis.line.x = element_line(color="black", size=0.75),
+          axis.line.y = element_line(color="black", size=0.75),
+          axis.title.y=element_text(size=base_size+2, family=base_family, face="plain", angle=90),
+          axis.text.y = element_text(size=base_size, family=base_family, face="plain", color="black", hjust=1), 
+          axis.text.x = element_text(size=base_size+2, family=base_family, face="plain", color="black"),
+          strip.background = element_blank(),
+          legend.key = element_blank(),
+          legend.title = element_blank(),
+          legend.text = element_text(size=base_size - 1, family = base_family, face="plain"),
+          legend.position="bottom",
+          complete = TRUE,
+          plot.title = element_text(hjust=0.5), 
+          strip.text.y = element_blank(), #element_text(size=base_size, family=base_family, angle = 0, hjust=0),
+    )
+  return(p)
+}
+
 # save figure 
 never_misexp_hp_enrich_protein_expanded_path = file.path(supp_fig5_out_dir, "never_misexp_hp_enrich_expanded_protein_coding.pdf")
 pdf(file=never_misexp_hp_enrich_protein_expanded_path, width = 7, height = 6, useDingbats=FALSE)
+
+gprofiler_protein_hp_results_df$log_odds_trunc <- signif(gprofiler_protein_hp_results_df$log_odds, digits = 2)
 # plot bar plot 
 gprofiler_hp_enrich_expanded_protein <-ggplot(data=gprofiler_protein_hp_results_df, aes(x=neg_log10_p_value, y=term_name)) +
   geom_bar(stat="identity", 
@@ -1042,13 +1127,16 @@ gprofiler_hp_enrich_expanded_protein <-ggplot(data=gprofiler_protein_hp_results_
            fill = '#5B84B1FF', 
            alpha = 0.8) +
   scale_y_discrete(name =  "") +
-  scale_x_continuous(name = expression(-log[10]("adjusted p-value")), expand=c(0,0), limits=c(0, 3.2))
+  scale_x_continuous(name = expression(-log[10]("adjusted p-value")), expand=c(0,0), limits=c(0, 4)) + 
+  geom_text(aes(label = log_odds_trunc, hjust=-0.2), color = "black", size=4.5)
 theme.hp_enrich_all(gprofiler_hp_enrich_expanded_protein)
 dev.off()
 theme.hp_enrich_all(gprofiler_hp_enrich_expanded_protein)
 never_misexp_hp_enrich_exp_protein_png_path = file.path(supp_fig5_out_dir, "never_misexp_hp_enrich_expanded_protein_coding.png")
-ggsave(never_misexp_hp_enrich_exp_protein_png_path, width = 7, height = 6, dpi=600)
+ggsave(never_misexp_hp_enrich_exp_protein_png_path, width = 7.5, height = 6, dpi=600)
 ```
+
+
 ### Log-odds calculation (protein-coding only)
 ```{r}
 gprofiler_protein_hp_results_ordered_df <- gprofiler_protein_hp_results_df %>%
